@@ -21,7 +21,7 @@ public:
     auto enablePowerOf2(bool isPow2)->void { _isPowerOf2 = isPow2; }
     auto setOutputFormat(QImage::Format format)->void { _outputFormat = format; }
 
-    auto generateTo(const QString& finalImagePath)->void;
+    auto generateTo(const QString& finalImagePath)->bool;
 
 protected:
     static auto _roundToPowerOf2(float value)->float;

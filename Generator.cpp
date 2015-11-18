@@ -11,7 +11,7 @@ Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
 }
 
-auto Generator::generateTo(const QString& finalImagePath)->void {
+auto Generator::generateTo(const QString& finalImagePath)->bool {
     rbp::MaxRectsBinPack bin(_maxSize.width(), _maxSize.height());
     QImage result(_maxSize, _outputFormat);
     QPainter painter(&result);
@@ -32,9 +32,16 @@ auto Generator::generateTo(const QString& finalImagePath)->void {
 
         bool orientation = cropRect.width() > cropRect.height();
         auto packedRect = bin.Insert(cropRect.width(), cropRect.height(), rbp::MaxRectsBinPack::RectBestShortSideFit);
-        if (packedRect.width > packedRect.height != orientation)
-            image = rotate90(image);
-        painter.drawImage(packedRect.x, packedRect.y, image);
+
+        if (packedRect.height > 0) {
+            if (packedRect.width > packedRect.height != orientation)
+                image = rotate90(image);
+            painter.drawImage(packedRect.x, packedRect.y, image);
+        } else {
+            painter.end();
+            fprintf(stdout, "%ux%u %s%\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
+            return false;
+        }
     }
 
     painter.end();
@@ -43,6 +50,7 @@ auto Generator::generateTo(const QString& finalImagePath)->void {
     writer.setFormat("PNG");
     writer.write(result);
     fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
+    return true;
 }
 
 auto Generator::_roundToPowerOf2(float value)->float {

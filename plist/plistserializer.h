@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PLISTSERIALIZER_H
+#define PLISTSERIALIZER_H
 
 // Qt includes
 #include <QIODevice>
@@ -18,3 +19,4 @@ private:
 	static QDomElement serializeList(QDomDocument &doc, const QVariantList &list);
 };
 
+#endif // PLISTSERIALIZER_H

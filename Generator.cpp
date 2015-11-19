@@ -6,6 +6,7 @@
 #include <QDirIterator>
 #include <QPainter>
 #include <QImageWriter>
+#include <QVariantMap>
 
 Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
@@ -15,6 +16,11 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     rbp::MaxRectsBinPack bin(_maxSize.width(), _maxSize.height());
     QImage result(_maxSize, _outputFormat);
     QPainter painter(&result);
+    int left = _maxSize.width();
+    int top = _maxSize.height();
+    int right = 0;
+    int bottom = 0;
+    QVariantMap frames;
 
     QDirIterator it(_inputImageDirPath, QStringList() << "*.*", QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
@@ -37,9 +43,18 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
             if (packedRect.width > packedRect.height != orientation)
                 image = rotate90(image);
             painter.drawImage(packedRect.x, packedRect.y, image);
+
+            if (packedRect.x < left)
+                left = packedRect.x;
+            if (packedRect.y < top)
+                top = packedRect.y;
+            if (packedRect.x + packedRect.width > right)
+                right = packedRect.x + packedRect.width;
+            if (packedRect.y + packedRect.height > bottom)
+                bottom = packedRect.y + packedRect.height;
         } else {
             painter.end();
-            fprintf(stdout, "%ux%u %s%\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
+            fprintf(stdout, "%ux%u %s\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
             return false;
         }
     }
@@ -48,7 +63,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
 
     QImageWriter writer(finalImagePath);
     writer.setFormat("PNG");
-    writer.write(result);
+    writer.write(result.copy(QRect(QPoint(left, top), QPoint(right, bottom))));
     fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
     return true;
 }

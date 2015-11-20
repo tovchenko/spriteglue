@@ -29,7 +29,7 @@ QRect ImageTrim::getBoundingBox(const QImage& sourceImage, bool maxAlphaValue) {
 
         for (int x = 0; x < sourceImage.width(); ++x) {
             const int alpha = qAlpha(row[x]);
-            if ((maxAlphaValue && alpha == 255) || (!maxAlphaValue && alpha)) {
+            if ((!maxAlphaValue && alpha == 255) || (maxAlphaValue && alpha)) {
                 rowFilled = true;
                 right = std::max(right, x);
                 if (left > x) {

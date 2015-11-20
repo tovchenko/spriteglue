@@ -10,6 +10,8 @@
 #include <QVariantMap>
 #include <QTextStream>
 
+#include <cmath>
+
 Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
 }
@@ -41,19 +43,42 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         }
 
         bool orientation = cropRect.width() > cropRect.height();
-        auto packedRect = bin.Insert(cropRect.width(), cropRect.height(), rbp::MaxRectsBinPack::RectBestShortSideFit);
+        auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestShortSideFit);
 
         if (packedRect.height > 0) {
             QVariantMap frameInfo;
             frameInfo["frame"] = QString("{{%1,%2},{%3,%4}}").arg(
-                        QString::number(packedRect.x),
-                        QString::number(packedRect.y),
-                        QString::number(packedRect.width),
-                        QString::number(packedRect.height));
+                        QString::number(packedRect.x + _padding),
+                        QString::number(packedRect.y + _padding),
+                        QString::number(packedRect.width - _padding),
+                        QString::number(packedRect.height - _padding));
 
-            if (packedRect.width > packedRect.height != orientation)
+            frameInfo["rotated"] = false;
+
+            frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
+                        QString::number(cropRect.x()),
+                        QString::number(cropRect.y()),
+                        QString::number(cropRect.width()),
+                        QString::number(cropRect.height()));
+
+            frameInfo["sourceSize"] = QString("{%1,%2}").arg(
+                        QString::number(cropRect.width()),
+                        QString::number(cropRect.height()));
+
+            if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
+                frameInfo["offset"] = QString("{%1,%2}").arg(
+                            QString::number(std::floor(std::abs(cropRect.x() - beforeTrimSize.width() / 2 - cropRect.width() / 2))),
+                            QString::number(std::floor(std::abs(cropRect.y() - beforeTrimSize.height() / 2 - cropRect.height() / 2))));
+            } else {
+                frameInfo["offset"] = "{0,0}";
+            }
+
+            if (packedRect.width > packedRect.height != orientation) {
                 image = rotate90(image);
-            painter.drawImage(packedRect.x, packedRect.y, image);
+                frameInfo["rotated"] = true;
+            }
+
+            painter.drawImage(packedRect.x + _padding, packedRect.y + _padding, image);
 
             if (packedRect.x < left)
                 left = packedRect.x;

@@ -25,6 +25,7 @@ public:
 
 protected:
     static auto _roundToPowerOf2(float value)->float;
+    static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
 
     float           _scale = 1.0f;
     QSize           _maxSize = { 0, 0 };

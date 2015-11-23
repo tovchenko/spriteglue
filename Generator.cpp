@@ -55,12 +55,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
                             (isRotated ? packedRect.width : packedRect.height) - 2 * _padding);
 
             frameInfo["rotated"] = isRotated;
-
-            frameInfo["frame"] = QString("{{%1,%2},{%3,%4}}").arg(
-                        QString::number(finalRect.x()),
-                        QString::number(finalRect.y()),
-                        QString::number(finalRect.width()),
-                        QString::number(finalRect.height()));
+            frameInfo["frame"] = finalRect;
 
             if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
                 const int w = std::floor(cropRect.x() + 0.5f * (-beforeTrimSize.width() + cropRect.width()));
@@ -106,7 +101,18 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
 
     QImageWriter writer(finalImagePath);
     writer.setFormat("PNG");
-    const QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
+
+    QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
+    if (_square) {
+        const auto maxSide = std::max(finalCrop.width(), finalCrop.height());
+        finalCrop.setWidth(maxSide);
+        finalCrop.setHeight(maxSide);
+    }
+
+    _adjustFrames(frames, [&finalCrop](QRect& rect) {
+        rect.setX(rect.x() - finalCrop.x());
+        rect.setY(rect.y() - finalCrop.y());
+    });
 
     if (writer.write(result.copy(finalCrop))) {
         fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
@@ -139,5 +145,19 @@ auto Generator::_roundToPowerOf2(float value)->float {
         power *= 2;
     }
     return power;
+}
+
+auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void {
+    for (auto it = frames.begin(); it != frames.end(); ++it) {
+        QVariantMap frame = qvariant_cast<QVariantMap>(*it);
+        QRect outRect = frame["frame"].toRect();
+        cb(outRect);
+        frame["frame"] = QString("{{%1,%2},{%3,%4}}").arg(
+                         QString::number(outRect.x()),
+                         QString::number(outRect.y()),
+                         QString::number(outRect.width()),
+                         QString::number(outRect.height()));
+        *it = frame;
+    }
 }
 

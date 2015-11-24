@@ -13,7 +13,8 @@ SOURCES += main.cpp \
     binPack/MaxRectsBinPack.cpp \
     imageTools/ImageTrim.cpp \
     Generator.cpp \
-    binPack/Rect.cpp
+    binPack/Rect.cpp \
+    ImageSorter.cpp
 
 HEADERS += \
     plist/plistserializer.h \
@@ -21,5 +22,6 @@ HEADERS += \
     imageTools/ImageTrim.h \
     Generator.h \
     binPack/Rect.h \
-    imageTools/imagerotate.h
+    imageTools/imagerotate.h \
+    ImageSorter.h
 

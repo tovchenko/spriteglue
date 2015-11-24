@@ -3,6 +3,7 @@
 #include "binPack/MaxRectsBinPack.h"
 #include "imageTools/imagerotate.h"
 #include "plist/plistserializer.h"
+#include "ImageSorter.h"
 
 #include <QDirIterator>
 #include <QPainter>
@@ -17,6 +18,9 @@ Generator::Generator(const QString& inputImageDirPath)
 }
 
 auto Generator::generateTo(const QString& finalImagePath)->bool {
+    ImageSorter sorter(_inputImageDirPath);
+    auto res = sorter.sort();
+
     rbp::MaxRectsBinPack bin(_maxSize.width(), _maxSize.height());
     QImage result(_maxSize, _outputFormat);
     QPainter painter(&result);
@@ -26,11 +30,9 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     int bottom = 0;
     QVariantMap frames;
 
-    QDirIterator it(_inputImageDirPath, QStringList() << "*.*", QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        const QString filePath = it.next();
-        const QFileInfo fileInfo(filePath);
-        QImage image(filePath);
+    for (auto it = res.begin(); it != res.end(); ++it) {
+        const QFileInfo fileInfo(*it);
+        QImage image(*it);
 
         if (_scale < 1.0f) {
             image = image.scaled(_scale * image.width(), _scale * image.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -43,7 +45,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         }
 
         bool orientation = cropRect.width() > cropRect.height();
-        auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestShortSideFit);
+        auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
 
         if (packedRect.height > 0) {
             QVariantMap frameInfo;

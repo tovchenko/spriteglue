@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include <memory>
 
 class ImageSorter {
 public:
@@ -16,9 +17,9 @@ public:
         MAXSIDE
     };
 
-    ImageSorter(const QString& inputImageDirPath);
+    ImageSorter(const std::vector<QString>& filePaths);
 
-    auto sort(const SortMode mode = SortMode::MAXSIDE)->std::vector<QString>;
+    auto sort(const SortMode mode = SortMode::MAXSIDE)->std::shared_ptr<std::vector<QString>>;
 
 protected:
     struct Info {

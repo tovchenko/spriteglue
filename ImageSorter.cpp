@@ -6,25 +6,22 @@
 using namespace std::placeholders;
 typedef ImageSorter _IS;
 
-ImageSorter::ImageSorter(const QString& inputImageDirPath) {
-    QDirIterator it(inputImageDirPath, QStringList() << "*.*", QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        const QString filePath = it.next();
-
-        QImageReader reader(filePath);
+ImageSorter::ImageSorter(const std::vector<QString>& filePaths) {
+    for (auto it = filePaths.begin(); it != filePaths.end(); ++it) {
+        QImageReader reader(*it);
         if (reader.canRead()) {
             Info data;
-            data.path = filePath;
+            data.path = *it;
             data.size = reader.size();
             _files.push_back(data);
         }
     }
 }
 
-auto ImageSorter::sort(const SortMode mode)->std::vector<QString> {
+auto ImageSorter::sort(const SortMode mode)->std::shared_ptr<std::vector<QString>> {
     std::sort(_files.begin(), _files.end(), _sMultiSorters[mode]);
-    std::vector<QString> result;
-    std::transform(_files.begin(), _files.end(), std::back_inserter(result), [](const Info& info) {
+    auto result = std::make_shared<std::vector<QString>>();
+    std::transform(_files.begin(), _files.end(), std::back_inserter(*result), [](const Info& info) {
         return info.path;
     });
     return result;

@@ -18,8 +18,14 @@ Generator::Generator(const QString& inputImageDirPath)
 }
 
 auto Generator::generateTo(const QString& finalImagePath)->bool {
-    ImageSorter sorter(_inputImageDirPath);
-    auto res = sorter.sort();
+    auto imageData = _scaleTrimIfNeeded();
+    std::vector<QString> paths;
+    std::transform(imageData->begin(), imageData->end(), std::back_inserter(paths), [](const std::pair<QString, _Data>& data) {
+        return data.first;
+    });
+
+    ImageSorter sorter(paths);
+    auto sortedPaths = sorter.sort();
 
     rbp::MaxRectsBinPack bin(_maxSize.width(), _maxSize.height());
     QImage result(_maxSize, _outputFormat);
@@ -30,19 +36,10 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     int bottom = 0;
     QVariantMap frames;
 
-    for (auto it = res.begin(); it != res.end(); ++it) {
-        const QFileInfo fileInfo(*it);
+    for (auto it = sortedPaths->begin(); it != sortedPaths->end(); ++it) {
         QImage image(*it);
-
-        if (_scale < 1.0f) {
-            image = image.scaled(_scale * image.width(), _scale * image.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        }
-
-        const QSize beforeTrimSize = image.size();
-        QRect cropRect(QPoint(0, 0), beforeTrimSize);
-        if (_trim != TrimMode::NONE) {
-            image = ImageTrim::createImage(image, _trim == TrimMode::MAX_ALPHA, cropRect);
-        }
+        const QSize& beforeTrimSize = imageData->at(*it).beforeCropSize;
+        const QRect& cropRect = imageData->at(*it).cropRect;
 
         bool orientation = cropRect.width() > cropRect.height();
         auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
@@ -91,12 +88,15 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
             if (packedRect.y + packedRect.height > bottom)
                 bottom = packedRect.y + packedRect.height;
 
-            frames[fileInfo.baseName() + '.' + fileInfo.completeSuffix()] = frameInfo;
+            frames[imageData->at(*it).basename] = frameInfo;
         } else {
             painter.end();
             fprintf(stdout, "%ux%u %s\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
             return false;
         }
+
+        QFile file(*it);
+        file.remove();
     }
 
     painter.end();
@@ -163,3 +163,42 @@ auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRec
     }
 }
 
+auto Generator::_getFileList()->std::shared_ptr<std::vector<QString>> {
+    auto result = std::make_shared<std::vector<QString>>();
+    QDirIterator it(_inputImageDirPath, QStringList() << "*.*", QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        result->push_back(it.next());
+    }
+    return result;
+}
+
+auto Generator::_scaleTrimIfNeeded()->std::shared_ptr<ImageData> {
+    auto result = std::make_shared<std::map<QString, _Data>>();
+    auto files = _getFileList();
+    for (auto it = files->begin(); it != files->end(); ++it) {
+        QImage image(*it);
+
+        if (_scale < 1.0f) {
+            image = image.scaled(_scale * image.width(), _scale * image.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        }
+
+        const QSize beforeTrimSize = image.size();
+        QRect cropRect(QPoint(0, 0), beforeTrimSize);
+        if (_trim != TrimMode::NONE) {
+            image = ImageTrim::createImage(image, _trim == TrimMode::MAX_ALPHA, cropRect);
+        }
+
+        const QFileInfo fileInfo(*it);
+        const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName() + '.' + "png";
+        QImageWriter writer(tmpImagePath);
+        writer.setFormat("PNG");
+        if (writer.write(image)) {
+            _Data data;
+            data.beforeCropSize = beforeTrimSize;
+            data.cropRect = cropRect;
+            data.basename = fileInfo.baseName() + '.' + fileInfo.completeSuffix();
+            result->insert(std::make_pair(tmpImagePath, data));
+        }
+    }
+    return result;
+}

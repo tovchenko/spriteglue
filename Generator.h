@@ -2,6 +2,7 @@
 #define GENERATOR_H
 
 #include <QImage>
+#include <memory>
 
 class Generator {
 public:
@@ -24,8 +25,17 @@ public:
     auto generateTo(const QString& finalImagePath)->bool;
 
 protected:
+    struct _Data {
+        QSize   beforeCropSize;
+        QRect   cropRect;
+        QString basename;
+    };
+    typedef std::map<QString, _Data> ImageData;
+
     static auto _roundToPowerOf2(float value)->float;
     static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
+    auto _getFileList()->std::shared_ptr<std::vector<QString>>;
+    auto _scaleTrimIfNeeded()->std::shared_ptr<ImageData>;
 
     float           _scale = 1.0f;
     QSize           _maxSize = { 0, 0 };

@@ -13,6 +13,8 @@
 
 #include <cmath>
 
+const int kNotUsedPercent = 20;
+
 Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
 }
@@ -24,86 +26,102 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         return data.first;
     });
 
+    auto area = std::accumulate(imageData->begin(), imageData->end(), 0, [](int sum, const std::pair<QString, _Data>& data) {
+        return sum + (data.second.cropRect.width() * data.second.cropRect.height());
+    });
+
     ImageSorter sorter(paths);
     const auto sortedPaths = sorter.sort();
-    const auto beforeSize = _fitSize(_maxSize, true);
-
+    int notUsedPercent = kNotUsedPercent;
+    int left, top, right, bottom;
     QVariantMap frames;
-    rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());
-    QImage result(beforeSize, _outputFormat);
-    QPainter painter(&result);
-    int left = beforeSize.width();
-    int top = beforeSize.height();
-    int right = 0;
-    int bottom = 0;
+    QImage* result = NULL;
 
-    for (auto it = sortedPaths->begin(); it != sortedPaths->end(); ++it) {
-        QImage image(*it);
-        const auto& beforeTrimSize = imageData->at(*it).beforeCropSize;
-        const auto& cropRect = imageData->at(*it).cropRect;
-
-        bool orientation = cropRect.width() > cropRect.height();
-        auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
-
-        if (packedRect.height > 0) {
-            QVariantMap frameInfo;
-            const bool isRotated = packedRect.width > packedRect.height != orientation;
-
-            QRect finalRect(packedRect.x + _padding,
-                            packedRect.y + _padding,
-                            (isRotated ? packedRect.height : packedRect.width) - 2 * _padding,
-                            (isRotated ? packedRect.width : packedRect.height) - 2 * _padding);
-
-            frameInfo["rotated"] = isRotated;
-            frameInfo["frame"] = finalRect;
-
-            if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
-                const int w = std::floor(cropRect.x() + 0.5f * (-beforeTrimSize.width() + cropRect.width()));
-                const int h = std::floor(-cropRect.y() + 0.5f * (beforeTrimSize.height() - cropRect.height()));
-                frameInfo["offset"] = QString("{%1,%2}").arg(QString::number(w), QString::number(h));
-            } else {
-                frameInfo["offset"] = "{0,0}";
-            }
-
-            frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
-                        QString::number(cropRect.x()),
-                        QString::number(cropRect.y()),
-                        QString::number(finalRect.width()),
-                        QString::number(finalRect.height()));
-
-            frameInfo["sourceSize"] = QString("{%1,%2}").arg(
-                        QString::number(beforeTrimSize.width()),
-                        QString::number(beforeTrimSize.height()));
-
-            if (isRotated)
-                image = rotate90(image);
-
-            painter.drawImage(packedRect.x + _padding, packedRect.y + _padding, image);
-
-            if (packedRect.x < left)
-                left = packedRect.x;
-            if (packedRect.y < top)
-                top = packedRect.y;
-            if (packedRect.x + packedRect.width > right)
-                right = packedRect.x + packedRect.width;
-            if (packedRect.y + packedRect.height > bottom)
-                bottom = packedRect.y + packedRect.height;
-
-            frames[imageData->at(*it).basename] = frameInfo;
-        } else {
-            painter.end();
-            fprintf(stdout, "%ux%u %s\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
-            return false;
+    do {
+        const int side = floor(sqrtf(area + area * notUsedPercent / 100));
+        QSize beforeSize(side, side);
+        if (!_square && _isPowerOf2) {
+            beforeSize.setWidth(_floorToPowerOf2(side));
+            beforeSize.setHeight(_roundToPowerOf2(side));
+        } else if (_square && _isPowerOf2) {
+            beforeSize.setWidth(_roundToPowerOf2(side));
+            beforeSize.setHeight(_roundToPowerOf2(side));
         }
 
-        QFile file(*it);
-        file.remove();
-    }
+        rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());
+        delete result;
+        result = new QImage(beforeSize, _outputFormat);
+        QPainter painter(result);
+        frames.clear();
+        left = beforeSize.width();
+        top = beforeSize.height();
+        right = 0;
+        bottom = 0;
 
-    painter.end();
+        for (auto it = sortedPaths->begin(); it != sortedPaths->end(); ++it) {
+            QImage image(*it);
+            const auto& beforeTrimSize = imageData->at(*it).beforeCropSize;
+            const auto& cropRect = imageData->at(*it).cropRect;
 
-    QImageWriter writer(finalImagePath);
-    writer.setFormat("PNG");
+            bool orientation = cropRect.width() > cropRect.height();
+            auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
+
+            if (packedRect.height > 0) {
+                QVariantMap frameInfo;
+                const bool isRotated = packedRect.width > packedRect.height != orientation;
+
+                QRect finalRect(packedRect.x + _padding,
+                                packedRect.y + _padding,
+                                (isRotated ? packedRect.height : packedRect.width) - 2 * _padding,
+                                (isRotated ? packedRect.width : packedRect.height) - 2 * _padding);
+
+                frameInfo["rotated"] = isRotated;
+                frameInfo["frame"] = finalRect;
+
+                if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
+                    const int w = std::floor(cropRect.x() + 0.5f * (-beforeTrimSize.width() + cropRect.width()));
+                    const int h = std::floor(-cropRect.y() + 0.5f * (beforeTrimSize.height() - cropRect.height()));
+                    frameInfo["offset"] = QString("{%1,%2}").arg(QString::number(w), QString::number(h));
+                } else {
+                    frameInfo["offset"] = "{0,0}";
+                }
+
+                frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
+                            QString::number(cropRect.x()),
+                            QString::number(cropRect.y()),
+                            QString::number(finalRect.width()),
+                            QString::number(finalRect.height()));
+
+                frameInfo["sourceSize"] = QString("{%1,%2}").arg(
+                            QString::number(beforeTrimSize.width()),
+                            QString::number(beforeTrimSize.height()));
+
+                if (isRotated)
+                    image = rotate90(image);
+
+                painter.drawImage(packedRect.x + _padding, packedRect.y + _padding, image);
+
+                if (packedRect.x < left)
+                    left = packedRect.x;
+                if (packedRect.y < top)
+                    top = packedRect.y;
+                if (packedRect.x + packedRect.width > right)
+                    right = packedRect.x + packedRect.width;
+                if (packedRect.y + packedRect.height > bottom)
+                    bottom = packedRect.y + packedRect.height;
+
+                frames[imageData->at(*it).basename] = frameInfo;
+            } else {
+                painter.end();
+                fprintf(stdout, "%ux%u %s\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
+                return false;
+            }
+
+            QFile file(*it);
+            file.remove();
+        }
+        painter.end();
+    } while (false);
 
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
@@ -112,7 +130,11 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         rect.setY(rect.y() - finalCrop.y());
     });
 
-    if (writer.write(result.copy(finalCrop))) {
+    QImageWriter writer(finalImagePath);
+    writer.setFormat("PNG");
+
+    if (writer.write(result->copy(finalCrop))) {
+        delete result;
         fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
 
         QFileInfo info(finalImagePath);
@@ -137,12 +159,20 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     return false;
 }
 
-auto Generator::_roundToPowerOf2(int value, bool isFloor)->int {
+auto Generator::_roundToPowerOf2(int value)->int {
     int power = 2;
     while (value > power) {
         power *= 2;
     }
-    return isFloor ? power / 2 : power;
+    return power;
+}
+
+auto Generator::_floorToPowerOf2(int value)->int {
+    int power = 2;
+    while (value >= power) {
+        power *= 2;
+    }
+    return power / 2;
 }
 
 auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void {
@@ -168,8 +198,8 @@ auto Generator::_fitSize(const QSize& size, bool isFloor) const->QSize {
     }
 
     if (_isPowerOf2) {
-        result.setWidth(_roundToPowerOf2(result.width(), isFloor));
-        result.setHeight(_roundToPowerOf2(result.height(), isFloor));
+        result.setWidth(isFloor ? _floorToPowerOf2(result.width()) : _roundToPowerOf2(result.width()));
+        result.setHeight(isFloor ? _floorToPowerOf2(result.height()) : _roundToPowerOf2(result.height()));
     }
     return result;
 }
@@ -200,7 +230,7 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
         }
 
         const QFileInfo fileInfo(*it);
-        const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName() + '.' + "png";
+        const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
         QImageWriter writer(tmpImagePath);
         writer.setFormat("PNG");
         if (writer.write(image)) {

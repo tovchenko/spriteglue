@@ -32,7 +32,8 @@ protected:
     };
     typedef std::map<QString, _Data> ImageData;
 
-    static auto _roundToPowerOf2(int value, bool isFloor=false)->int;
+    static auto _roundToPowerOf2(int value)->int;
+    static auto _floorToPowerOf2(int value)->int;
     static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
     auto _fitSize(const QSize& size, bool isFloor=false) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::vector<QString>>;

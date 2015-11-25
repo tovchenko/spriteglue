@@ -25,21 +25,22 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     });
 
     ImageSorter sorter(paths);
-    auto sortedPaths = sorter.sort();
+    const auto sortedPaths = sorter.sort();
+    const auto beforeSize = _fitSize(_maxSize, true);
 
-    rbp::MaxRectsBinPack bin(_maxSize.width(), _maxSize.height());
-    QImage result(_maxSize, _outputFormat);
+    QVariantMap frames;
+    rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());
+    QImage result(beforeSize, _outputFormat);
     QPainter painter(&result);
-    int left = _maxSize.width();
-    int top = _maxSize.height();
+    int left = beforeSize.width();
+    int top = beforeSize.height();
     int right = 0;
     int bottom = 0;
-    QVariantMap frames;
 
     for (auto it = sortedPaths->begin(); it != sortedPaths->end(); ++it) {
         QImage image(*it);
-        const QSize& beforeTrimSize = imageData->at(*it).beforeCropSize;
-        const QRect& cropRect = imageData->at(*it).cropRect;
+        const auto& beforeTrimSize = imageData->at(*it).beforeCropSize;
+        const auto& cropRect = imageData->at(*it).cropRect;
 
         bool orientation = cropRect.width() > cropRect.height();
         auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
@@ -105,12 +106,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     writer.setFormat("PNG");
 
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
-    if (_square) {
-        const auto maxSide = std::max(finalCrop.width(), finalCrop.height());
-        finalCrop.setWidth(maxSide);
-        finalCrop.setHeight(maxSide);
-    }
-
+    finalCrop.setSize(_fitSize(finalCrop.size()));
     _adjustFrames(frames, [&finalCrop](QRect& rect) {
         rect.setX(rect.x() - finalCrop.x());
         rect.setY(rect.y() - finalCrop.y());
@@ -141,12 +137,12 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     return false;
 }
 
-auto Generator::_roundToPowerOf2(float value)->float {
-    float power = 2.0f;
+auto Generator::_roundToPowerOf2(int value, bool isFloor)->int {
+    int power = 2;
     while (value > power) {
         power *= 2;
     }
-    return power;
+    return isFloor ? power / 2 : power;
 }
 
 auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void {
@@ -163,7 +159,22 @@ auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRec
     }
 }
 
-auto Generator::_getFileList()->std::shared_ptr<std::vector<QString>> {
+auto Generator::_fitSize(const QSize& size, bool isFloor) const->QSize {
+    QSize result = size;
+
+    if (_square) {
+        auto side = isFloor ? std::min(result.width(), result.height()) : std::max(result.width(), result.height());
+        result = QSize(side, side);
+    }
+
+    if (_isPowerOf2) {
+        result.setWidth(_roundToPowerOf2(result.width(), isFloor));
+        result.setHeight(_roundToPowerOf2(result.height(), isFloor));
+    }
+    return result;
+}
+
+auto Generator::_readFileList() const->std::shared_ptr<std::vector<QString>> {
     auto result = std::make_shared<std::vector<QString>>();
     QDirIterator it(_inputImageDirPath, QStringList() << "*.*", QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
@@ -172,9 +183,9 @@ auto Generator::_getFileList()->std::shared_ptr<std::vector<QString>> {
     return result;
 }
 
-auto Generator::_scaleTrimIfNeeded()->std::shared_ptr<ImageData> {
+auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
     auto result = std::make_shared<std::map<QString, _Data>>();
-    auto files = _getFileList();
+    auto files = _readFileList();
     for (auto it = files->begin(); it != files->end(); ++it) {
         QImage image(*it);
 

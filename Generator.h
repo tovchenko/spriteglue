@@ -35,7 +35,9 @@ protected:
     static auto _roundToPowerOf2(int value)->int;
     static auto _floorToPowerOf2(int value)->int;
     static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
-    auto _fitSize(const QSize& size, bool isFloor=false) const->QSize;
+    static auto _removeTempFiles(const std::vector<QString>& paths)->void;
+    static auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool;
+    auto _fitSize(const QSize& size) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::vector<QString>>;
     auto _scaleTrimIfNeeded() const->std::shared_ptr<ImageData>;
 

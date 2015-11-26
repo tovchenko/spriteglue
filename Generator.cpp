@@ -123,10 +123,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         painter.end();
     } while (!enoughSpace);
 
-    std::for_each(sortedPaths->begin(), sortedPaths->end(), [](const QString& path) {
-        QFile file(path);
-        file.remove();
-    });
+    _removeTempFiles(*sortedPaths.get());
 
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
@@ -135,32 +132,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         rect.setY(rect.y() - finalCrop.y());
     });
 
-    QImageWriter writer(finalImagePath);
-    writer.setFormat("png");
-
-    if (writer.write(result->copy(finalCrop))) {
-        fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
-
-        QFileInfo info(finalImagePath);
-        QFile plistFile(info.dir().path() + QDir::separator() + info.baseName() + ".plist");
-        if (plistFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream out(&plistFile);
-
-            QVariantMap meta;
-            meta["format"] = 2;
-            meta["realTextureFileName"] = meta["textureFileName"] = info.baseName() + '.' + info.completeSuffix();
-            meta["size"] = QString("{%1,%2}").arg(QString::number(finalCrop.width()), QString::number(finalCrop.height()));
-
-            QVariantMap root;
-            root["frames"] = frames;
-            root["metadata"] = meta;
-            out << PListSerializer::toPList(root);
-            plistFile.close();
-
-            return true;
-        }
-    }
-    return false;
+    return _saveResults(result->copy(finalCrop), frames, finalImagePath);
 }
 
 auto Generator::_roundToPowerOf2(int value)->int {
@@ -193,17 +165,53 @@ auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRec
     }
 }
 
-auto Generator::_fitSize(const QSize& size, bool isFloor) const->QSize {
+auto Generator::_removeTempFiles(const std::vector<QString>& paths)->void {
+    std::for_each(paths.begin(), paths.end(), [](const QString& path) {
+        QFile file(path);
+        file.remove();
+    });
+}
+
+auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool {
+    QImageWriter writer(finalImagePath);
+    writer.setFormat("png");
+
+    if (writer.write(image)) {
+        fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
+
+        QFileInfo info(finalImagePath);
+        QFile plistFile(info.dir().path() + QDir::separator() + info.baseName() + ".plist");
+        if (plistFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&plistFile);
+
+            QVariantMap meta;
+            meta["format"] = 2;
+            meta["realTextureFileName"] = meta["textureFileName"] = info.baseName() + '.' + info.completeSuffix();
+            meta["size"] = QString("{%1,%2}").arg(QString::number(image.size().width()), QString::number(image.size().height()));
+
+            QVariantMap root;
+            root["frames"] = frames;
+            root["metadata"] = meta;
+            out << PListSerializer::toPList(root);
+            plistFile.close();
+
+            return true;
+        }
+    }
+    return false;
+}
+
+auto Generator::_fitSize(const QSize& size) const->QSize {
     QSize result = size;
 
     if (_square) {
-        auto side = isFloor ? std::min(result.width(), result.height()) : std::max(result.width(), result.height());
+        auto side = std::max(result.width(), result.height());
         result = QSize(side, side);
     }
 
     if (_isPowerOf2) {
-        result.setWidth(isFloor ? _floorToPowerOf2(result.width()) : _roundToPowerOf2(result.width()));
-        result.setHeight(isFloor ? _floorToPowerOf2(result.height()) : _roundToPowerOf2(result.height()));
+        result.setWidth(_roundToPowerOf2(result.width()));
+        result.setHeight(_roundToPowerOf2(result.height()));
     }
     return result;
 }

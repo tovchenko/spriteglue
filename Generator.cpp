@@ -13,7 +13,8 @@
 
 #include <cmath>
 
-const int kNotUsedPercent = 20;
+const int kBasePercent = 10;
+const int kStepPercent = 2;
 
 Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
@@ -32,12 +33,14 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
 
     ImageSorter sorter(paths);
     const auto sortedPaths = sorter.sort();
-    int notUsedPercent = kNotUsedPercent;
+    int notUsedPercent = kBasePercent;
     int left, top, right, bottom;
     QVariantMap frames;
     QImage* result = NULL;
 
+    bool enoughSpace = true;
     do {
+        notUsedPercent += kStepPercent;
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
         QSize beforeSize(side, side);
         if (!_square && _isPowerOf2) {
@@ -67,6 +70,8 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
             auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
 
             if (packedRect.height > 0) {
+                enoughSpace = true;
+
                 QVariantMap frameInfo;
                 const bool isRotated = packedRect.width > packedRect.height != orientation;
 
@@ -112,16 +117,18 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
 
                 frames[imageData->at(*it).basename] = frameInfo;
             } else {
-                painter.end();
                 fprintf(stdout, "%ux%u %s\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
-                return false;
+                enoughSpace = false;
+                break;
             }
-
-            QFile file(*it);
-            file.remove();
         }
         painter.end();
-    } while (false);
+    } while (!enoughSpace);
+
+    std::for_each(sortedPaths->begin(), sortedPaths->end(), [](const QString& path) {
+        QFile file(path);
+        file.remove();
+    });
 
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
@@ -131,7 +138,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     });
 
     QImageWriter writer(finalImagePath);
-    writer.setFormat("PNG");
+    writer.setFormat("png");
 
     if (writer.write(result->copy(finalCrop))) {
         delete result;
@@ -232,7 +239,7 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
         const QFileInfo fileInfo(*it);
         const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
         QImageWriter writer(tmpImagePath);
-        writer.setFormat("PNG");
+        writer.setFormat("png");
         if (writer.write(image)) {
             _Data data;
             data.beforeCropSize = beforeTrimSize;

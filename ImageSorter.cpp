@@ -1,28 +1,17 @@
 #include "ImageSorter.h"
 
-#include <QDirIterator>
-#include <QImageReader>
-
 using namespace std::placeholders;
 typedef ImageSorter _IS;
 
-ImageSorter::ImageSorter(const std::vector<QString>& filePaths) {
-    for (auto it = filePaths.begin(); it != filePaths.end(); ++it) {
-        QImageReader reader(*it);
-        if (reader.canRead()) {
-            Info data;
-            data.path = *it;
-            data.size = reader.size();
-            _files.push_back(data);
-        }
-    }
+ImageSorter::ImageSorter(const FrameSizes& files)
+: _files(files) {
 }
 
 auto ImageSorter::sort(const SortMode mode)->std::shared_ptr<std::vector<QString>> {
     std::sort(_files.begin(), _files.end(), _sMultiSorters[mode]);
     auto result = std::make_shared<std::vector<QString>>();
     std::transform(_files.begin(), _files.end(), std::back_inserter(*result), [](const Info& info) {
-        return info.path;
+        return info.first;
     });
     return result;
 }
@@ -44,21 +33,21 @@ bool ImageSorter::_msort(const Info& a, const Info& b, FuncList criteria) {
 }
 
 int ImageSorter::_sortWidth(const Info& a, const Info& b) {
-    return b.size.width() - a.size.width();
+    return b.second.width() - a.second.width();
 }
 
 int ImageSorter::_sortHeight(const Info& a, const Info& b) {
-    return b.size.height() - a.size.height();
+    return b.second.height() - a.second.height();
 }
 
 int ImageSorter::_sortArea(const Info& a, const Info& b) {
-    return b.size.width() * b.size.height() - a.size.width() * a.size.height();
+    return b.second.width() * b.second.height() - a.second.width() * a.second.height();
 }
 
 int ImageSorter::_sortMax(const Info& a, const Info& b) {
-    return std::max(b.size.width(), b.size.height()) - std::max(a.size.width(), a.size.height());
+    return std::max(b.second.width(), b.second.height()) - std::max(a.second.width(), a.second.height());
 }
 
 int ImageSorter::_sortMin(const Info& a, const Info& b) {
-    return std::min(b.size.width(), b.size.height()) - std::min(a.size.width(), a.size.height());
+    return std::min(b.second.width(), b.second.height()) - std::min(a.second.width(), a.second.height());
 }

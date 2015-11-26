@@ -22,17 +22,17 @@ Generator::Generator(const QString& inputImageDirPath)
 
 auto Generator::generateTo(const QString& finalImagePath)->bool {
     auto imageData = _scaleTrimIfNeeded();
-    std::vector<QString> paths;
-    std::transform(imageData->begin(), imageData->end(), std::back_inserter(paths), [](const std::pair<QString, _Data>& data) {
-        return data.first;
+    ImageSorter::FrameSizes frameSizes;
+    std::transform(imageData->begin(), imageData->end(), std::back_inserter(frameSizes), [](const std::pair<QString, _Data>& data) {
+        return std::make_pair(data.first, data.second.cropRect.size());
     });
 
     auto area = std::accumulate(imageData->begin(), imageData->end(), 0, [](int sum, const std::pair<QString, _Data>& data) {
         return sum + (data.second.cropRect.width() * data.second.cropRect.height());
     });
 
-    ImageSorter sorter(paths);
-    const auto sortedPaths = sorter.sort();
+    ImageSorter sorter(frameSizes);
+    const auto sortedFrames = sorter.sort();
     int notUsedPercent = kBasePercent;
     int left, top, right, bottom;
     QVariantMap frames;
@@ -60,8 +60,8 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         right = 0;
         bottom = 0;
 
-        for (auto it = sortedPaths->begin(); it != sortedPaths->end(); ++it) {
-            QImage image(*it);
+        for (auto it = sortedFrames->begin(); it != sortedFrames->end(); ++it) {
+            QImage image(imageData->at(*it).path);
             const auto& beforeTrimSize = imageData->at(*it).beforeCropSize;
             const auto& cropRect = imageData->at(*it).cropRect;
 
@@ -114,7 +114,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
                 if (packedRect.y + packedRect.height > bottom)
                     bottom = packedRect.y + packedRect.height;
 
-                frames[imageData->at(*it).basename] = frameInfo;
+                frames[*it] = frameInfo;
             } else {
                 enoughSpace = false;
                 break;
@@ -123,7 +123,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         painter.end();
     } while (!enoughSpace);
 
-    _removeTempFiles(*sortedPaths.get());
+    _removeTempFiles(*imageData.get());
 
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
@@ -165,9 +165,9 @@ auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRec
     }
 }
 
-auto Generator::_removeTempFiles(const std::vector<QString>& paths)->void {
-    std::for_each(paths.begin(), paths.end(), [](const QString& path) {
-        QFile file(path);
+auto Generator::_removeTempFiles(const ImageData& paths)->void {
+    std::for_each(paths.begin(), paths.end(), [](const std::pair<QString, _Data>& data) {
+        QFile file(data.second.path);
         file.remove();
     });
 }
@@ -201,6 +201,10 @@ auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, con
     return false;
 }
 
+auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImages)->bool {
+
+}
+
 auto Generator::_fitSize(const QSize& size) const->QSize {
     QSize result = size;
 
@@ -226,7 +230,7 @@ auto Generator::_readFileList() const->std::shared_ptr<std::vector<QString>> {
 }
 
 auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
-    auto result = std::make_shared<std::map<QString, _Data>>();
+    auto result = std::make_shared<ImageData>();
     auto files = _readFileList();
     for (auto it = files->begin(); it != files->end(); ++it) {
         QImage image(*it);
@@ -241,6 +245,10 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
             image = ImageTrim::createImage(image, _trim == TrimMode::MAX_ALPHA, cropRect);
         }
 
+        if (_checkDuplicate(image, *result.get())) {
+
+        }
+
         const QFileInfo fileInfo(*it);
         const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
         QImageWriter writer(tmpImagePath);
@@ -249,8 +257,8 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
             _Data data;
             data.beforeCropSize = beforeTrimSize;
             data.cropRect = cropRect;
-            data.basename = fileInfo.baseName() + '.' + fileInfo.completeSuffix();
-            result->insert(std::make_pair(tmpImagePath, data));
+            data.path = tmpImagePath;
+            result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
         }
     }
     return result;

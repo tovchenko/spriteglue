@@ -28,15 +28,16 @@ protected:
     struct _Data {
         QSize   beforeCropSize;
         QRect   cropRect;
-        QString basename;
+        QString path;
     };
     typedef std::map<QString, _Data> ImageData;
 
     static auto _roundToPowerOf2(int value)->int;
     static auto _floorToPowerOf2(int value)->int;
     static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
-    static auto _removeTempFiles(const std::vector<QString>& paths)->void;
+    static auto _removeTempFiles(const ImageData& paths)->void;
     static auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool;
+    static auto _checkDuplicate(const QImage& image, const ImageData& otherImages)->bool;
     auto _fitSize(const QSize& size) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::vector<QString>>;
     auto _scaleTrimIfNeeded() const->std::shared_ptr<ImageData>;

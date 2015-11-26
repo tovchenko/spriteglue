@@ -117,7 +117,6 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
 
                 frames[imageData->at(*it).basename] = frameInfo;
             } else {
-                fprintf(stdout, "%ux%u %s\n", _maxSize.width(), _maxSize.height(), qPrintable(" too small."));
                 enoughSpace = false;
                 break;
             }

@@ -36,7 +36,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     int notUsedPercent = kBasePercent;
     int left, top, right, bottom;
     QVariantMap frames;
-    QImage* result = NULL;
+    std::unique_ptr<QImage> result;
 
     bool enoughSpace = true;
     do {
@@ -52,9 +52,8 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         }
 
         rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());
-        delete result;
-        result = new QImage(beforeSize, _outputFormat);
-        QPainter painter(result);
+        result = std::move(std::unique_ptr<QImage>(new QImage(beforeSize, _outputFormat)));
+        QPainter painter(result.get());
         frames.clear();
         left = beforeSize.width();
         top = beforeSize.height();
@@ -140,7 +139,6 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     writer.setFormat("png");
 
     if (writer.write(result->copy(finalCrop))) {
-        delete result;
         fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
 
         QFileInfo info(finalImagePath);

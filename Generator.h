@@ -26,9 +26,11 @@ public:
 
 protected:
     struct _Data {
+        _Data() : duplicate(false) {}
         QSize   beforeCropSize;
         QRect   cropRect;
         QString path;
+        bool    duplicate;
     };
     typedef std::map<QString, _Data> ImageData;
 
@@ -37,7 +39,7 @@ protected:
     static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
     static auto _removeTempFiles(const ImageData& paths)->void;
     static auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool;
-    static auto _checkDuplicate(const QImage& image, const ImageData& otherImages)->bool;
+    static auto _checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool;
     auto _fitSize(const QSize& size) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::vector<QString>>;
     auto _scaleTrimIfNeeded() const->std::shared_ptr<ImageData>;

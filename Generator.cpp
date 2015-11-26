@@ -8,6 +8,7 @@
 #include <QDirIterator>
 #include <QPainter>
 #include <QImageWriter>
+#include <QImageReader>
 #include <QVariantMap>
 #include <QTextStream>
 
@@ -100,10 +101,11 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
                             QString::number(beforeTrimSize.width()),
                             QString::number(beforeTrimSize.height()));
 
-                if (isRotated)
-                    image = rotate90(image);
-
-                painter.drawImage(packedRect.x + _padding, packedRect.y + _padding, image);
+                if (!imageData->at(*it).duplicate) {
+                    if (isRotated)
+                        image = rotate90(image);
+                    painter.drawImage(packedRect.x + _padding, packedRect.y + _padding, image);
+                }
 
                 if (packedRect.x < left)
                     left = packedRect.x;
@@ -201,8 +203,26 @@ auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, con
     return false;
 }
 
-auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImages)->bool {
-
+auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool {
+    for (auto it = otherImages.begin(); it != otherImages.end(); ++it) {
+        QImageReader reader(it->second.path);
+        if (reader.canRead()) {
+            if (image.size() == reader.size()) {
+                auto size = image.size();
+                auto image2 = reader.read();
+                if (image.pixel(0, 0) == image2.pixel(0, 0) &&
+                    image.pixel(size.width() - 1, size.height() - 1) == image2.pixel(size.width() - 1, size.height() - 1) &&
+                    image.pixel(size.width() / 2, size.height() / 2) == image2.pixel(size.width() / 2, size.height() / 2))
+                {
+                    if (image == image2) {
+                       out = it->second.path;
+                       return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
 }
 
 auto Generator::_fitSize(const QSize& size) const->QSize {
@@ -245,20 +265,27 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
             image = ImageTrim::createImage(image, _trim == TrimMode::MAX_ALPHA, cropRect);
         }
 
-        if (_checkDuplicate(image, *result.get())) {
-
-        }
-
         const QFileInfo fileInfo(*it);
-        const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
-        QImageWriter writer(tmpImagePath);
-        writer.setFormat("png");
-        if (writer.write(image)) {
+
+        QString outPath;
+        if (_checkDuplicate(image, *result.get(), outPath)) {
             _Data data;
             data.beforeCropSize = beforeTrimSize;
             data.cropRect = cropRect;
-            data.path = tmpImagePath;
+            data.path = outPath;
+            data.duplicate = true;
             result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
+        } else {
+            const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
+            QImageWriter writer(tmpImagePath);
+            writer.setFormat("png");
+            if (writer.write(image)) {
+                _Data data;
+                data.beforeCropSize = beforeTrimSize;
+                data.cropRect = cropRect;
+                data.path = tmpImagePath;
+                result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
+            }
         }
     }
     return result;

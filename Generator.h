@@ -29,7 +29,7 @@ protected:
         _Data() : duplicate(false) {}
         QSize   beforeCropSize;
         QRect   cropRect;
-        QString path;
+        QString pathOrDuplicateFrameName;
         bool    duplicate;
     };
     typedef std::map<QString, _Data> ImageData;

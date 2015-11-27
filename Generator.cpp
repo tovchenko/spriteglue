@@ -29,7 +29,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     });
 
     auto area = std::accumulate(imageData->begin(), imageData->end(), 0, [](int sum, const std::pair<QString, _Data>& data) {
-        return sum + (data.second.cropRect.width() * data.second.cropRect.height());
+        return data.second.duplicate ? sum : sum + (data.second.cropRect.width() * data.second.cropRect.height());
     });
 
     ImageSorter sorter(frameSizes);
@@ -39,8 +39,9 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     QVariantMap frames;
     std::unique_ptr<QImage> result;
 
-    bool enoughSpace = true;
+    bool enoughSpace;
     do {
+        enoughSpace = true;
         notUsedPercent += kStepPercent;
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
         QSize beforeSize(side, side);
@@ -61,66 +62,73 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         right = 0;
         bottom = 0;
 
-        for (auto it = sortedFrames->begin(); it != sortedFrames->end(); ++it) {
-            QImage image(imageData->at(*it).path);
-            const auto& beforeTrimSize = imageData->at(*it).beforeCropSize;
-            const auto& cropRect = imageData->at(*it).cropRect;
+        for (auto frameName : *sortedFrames) {
+            const auto& beforeTrimSize = imageData->at(frameName).beforeCropSize;
+            const auto& cropRect = imageData->at(frameName).cropRect;
+            QVariantMap frameInfo;
 
-            bool orientation = cropRect.width() > cropRect.height();
-            auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
+            if (!imageData->at(frameName).duplicate) {
+                QImage image(imageData->at(frameName).path);
 
-            if (packedRect.height > 0) {
-                enoughSpace = true;
+                bool orientation = cropRect.width() > cropRect.height();
+                auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
 
-                QVariantMap frameInfo;
-                const bool isRotated = packedRect.width > packedRect.height != orientation;
+                if (packedRect.height > 0) {
+                    const bool isRotated = packedRect.width > packedRect.height != orientation;
 
-                QRect finalRect(packedRect.x + _padding,
-                                packedRect.y + _padding,
-                                (isRotated ? packedRect.height : packedRect.width) - 2 * _padding,
-                                (isRotated ? packedRect.width : packedRect.height) - 2 * _padding);
+                    QRect finalRect(packedRect.x + _padding,
+                                    packedRect.y + _padding,
+                                    cropRect.width() - 2 * _padding,
+                                    cropRect.height() - 2 * _padding);
 
-                frameInfo["rotated"] = isRotated;
-                frameInfo["frame"] = finalRect;
+                    frameInfo["rotated"] = isRotated;
+                    frameInfo["frame"] = finalRect;
+                    frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
+                                QString::number(cropRect.x()),
+                                QString::number(cropRect.y()),
+                                QString::number(finalRect.width()),
+                                QString::number(finalRect.height()));
 
-                if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
-                    const int w = std::floor(cropRect.x() + 0.5f * (-beforeTrimSize.width() + cropRect.width()));
-                    const int h = std::floor(-cropRect.y() + 0.5f * (beforeTrimSize.height() - cropRect.height()));
-                    frameInfo["offset"] = QString("{%1,%2}").arg(QString::number(w), QString::number(h));
-                } else {
-                    frameInfo["offset"] = "{0,0}";
-                }
-
-                frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
-                            QString::number(cropRect.x()),
-                            QString::number(cropRect.y()),
-                            QString::number(finalRect.width()),
-                            QString::number(finalRect.height()));
-
-                frameInfo["sourceSize"] = QString("{%1,%2}").arg(
-                            QString::number(beforeTrimSize.width()),
-                            QString::number(beforeTrimSize.height()));
-
-                if (!imageData->at(*it).duplicate) {
                     if (isRotated)
                         image = rotate90(image);
                     painter.drawImage(packedRect.x + _padding, packedRect.y + _padding, image);
+
+                    if (packedRect.x < left)
+                        left = packedRect.x;
+                    if (packedRect.y < top)
+                        top = packedRect.y;
+                    if (packedRect.x + packedRect.width > right)
+                        right = packedRect.x + packedRect.width;
+                    if (packedRect.y + packedRect.height > bottom)
+                        bottom = packedRect.y + packedRect.height;
+                } else {
+                    enoughSpace = false;
+                    break;
                 }
-
-                if (packedRect.x < left)
-                    left = packedRect.x;
-                if (packedRect.y < top)
-                    top = packedRect.y;
-                if (packedRect.x + packedRect.width > right)
-                    right = packedRect.x + packedRect.width;
-                if (packedRect.y + packedRect.height > bottom)
-                    bottom = packedRect.y + packedRect.height;
-
-                frames[*it] = frameInfo;
             } else {
-                enoughSpace = false;
-                break;
+                const auto otherImageInfo = frames[imageData->at(frameName).path].toMap();
+                frameInfo["rotated"] = otherImageInfo["rotated"].toBool();
+                frameInfo["frame"] = otherImageInfo["frame"].toRect();
+                frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
+                            QString::number(cropRect.x()),
+                            QString::number(cropRect.y()),
+                            QString::number(cropRect.width() - 2 * _padding),
+                            QString::number(cropRect.height() - 2 * _padding));
             }
+
+            if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
+                const int w = std::floor(cropRect.x() + 0.5f * (-beforeTrimSize.width() + cropRect.width()));
+                const int h = std::floor(-cropRect.y() + 0.5f * (beforeTrimSize.height() - cropRect.height()));
+                frameInfo["offset"] = QString("{%1,%2}").arg(QString::number(w), QString::number(h));
+            } else {
+                frameInfo["offset"] = "{0,0}";
+            }
+
+            frameInfo["sourceSize"] = QString("{%1,%2}").arg(
+                        QString::number(beforeTrimSize.width()),
+                        QString::number(beforeTrimSize.height()));
+
+            frames[frameName] = frameInfo;
         }
         painter.end();
     } while (!enoughSpace);
@@ -168,10 +176,10 @@ auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRec
 }
 
 auto Generator::_removeTempFiles(const ImageData& paths)->void {
-    std::for_each(paths.begin(), paths.end(), [](const std::pair<QString, _Data>& data) {
+    for (auto data : paths) {
         QFile file(data.second.path);
         file.remove();
-    });
+    }
 }
 
 auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool {
@@ -215,7 +223,7 @@ auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImage
                     image.pixel(size.width() / 2, size.height() / 2) == image2.pixel(size.width() / 2, size.height() / 2))
                 {
                     if (image == image2) {
-                       out = it->second.path;
+                       out = it->first;
                        return true;
                     }
                 }
@@ -267,12 +275,12 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
 
         const QFileInfo fileInfo(*it);
 
-        QString outPath;
-        if (_checkDuplicate(image, *result.get(), outPath)) {
+        QString duplicateFrameName;
+        if (_checkDuplicate(image, *result.get(), duplicateFrameName)) {
             _Data data;
             data.beforeCropSize = beforeTrimSize;
             data.cropRect = cropRect;
-            data.path = outPath;
+            data.path = duplicateFrameName;
             data.duplicate = true;
             result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
         } else {

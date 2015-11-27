@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
     Generator spritesheet("/Users/tovchenko/Desktop/atlas");
     spritesheet.setMaxSize(QSize(4096, 4096));
     //spritesheet.trim(Generator::TrimMode::NONE);
-    //spritesheet.setPadding(50);
+    //spritesheet.setPadding(1);
     //spritesheet.enableSquare(true);
     //spritesheet.enablePowerOf2(true);
     if (spritesheet.generateTo("/Users/tovchenko/Desktop/test/myatlas.png"))

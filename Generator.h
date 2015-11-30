@@ -41,6 +41,7 @@ protected:
     static auto _removeTempFiles(const ImageData& paths)->void;
     static auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool;
     static auto _checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool;
+    static auto _adjustSortedPaths(std::vector<QString>& paths, ImageData& imageData)->void;
     auto _fitSize(const QSize& size) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::vector<QString>>;
     auto _scaleTrimIfNeeded() const->std::shared_ptr<ImageData>;

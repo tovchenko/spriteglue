@@ -35,22 +35,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
     ImageSorter sorter(frameSizes);
     const auto sortedFrames = sorter.sort();
 
-    for (auto frameNameIt = sortedFrames->begin(); frameNameIt != sortedFrames->end();) {
-        const auto idIt = imageData->find(*frameNameIt);
-        if (idIt == imageData->end() || !idIt->second.duplicate || idIt->second.adjusted) {
-            ++frameNameIt;
-            continue;
-        }
-
-        auto notDuplicateIt = std::find(sortedFrames->begin(), sortedFrames->end(), idIt->second.pathOrDuplicateFrameName);
-        if (notDuplicateIt == sortedFrames->end())
-            throw std::exception();
-
-        const auto tmp = *frameNameIt;
-        sortedFrames->erase(frameNameIt);
-        sortedFrames->insert(notDuplicateIt + 1, tmp);
-        idIt->second.adjusted = true;
-    }
+    _adjustSortedPaths(*sortedFrames, *imageData);
 
     int notUsedPercent = kBasePercent;
     int left, top, right, bottom;
@@ -155,7 +140,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         painter.end();
     } while (!enoughSpace);
 
-    _removeTempFiles(*imageData.get());
+    _removeTempFiles(*imageData);
 
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
@@ -260,6 +245,25 @@ auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImage
     return false;
 }
 
+auto Generator::_adjustSortedPaths(std::vector<QString>& paths, ImageData& imageData)->void {
+    for (auto frameNameIt = paths.begin(); frameNameIt != paths.end();) {
+        const auto idIt = imageData.find(*frameNameIt);
+        if (idIt == imageData.end() || !idIt->second.duplicate || idIt->second.adjusted) {
+            ++frameNameIt;
+            continue;
+        }
+
+        auto notDuplicateIt = std::find(paths.begin(), paths.end(), idIt->second.pathOrDuplicateFrameName);
+        if (notDuplicateIt == paths.end())
+            throw std::exception();
+
+        const auto tmp = *frameNameIt;
+        paths.erase(frameNameIt);
+        paths.insert(notDuplicateIt + 1, tmp);
+        idIt->second.adjusted = true;
+    }
+}
+
 auto Generator::_fitSize(const QSize& size) const->QSize {
     QSize result = size;
 
@@ -303,7 +307,7 @@ auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
         const QFileInfo fileInfo(*it);
 
         QString duplicateFrameName;
-        if (_checkDuplicate(image, *result.get(), duplicateFrameName)) {
+        if (_checkDuplicate(image, *result, duplicateFrameName)) {
             _Data data;
             data.beforeCropSize = beforeTrimSize;
             data.cropRect = cropRect;

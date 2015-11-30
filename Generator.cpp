@@ -46,8 +46,9 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         if (notDuplicateIt == sortedFrames->end())
             throw std::exception();
 
-        sortedFrames->insert(notDuplicateIt + 1, *frameNameIt);
+        const auto tmp = *frameNameIt;
         sortedFrames->erase(frameNameIt);
+        sortedFrames->insert(notDuplicateIt + 1, tmp);
         idIt->second.adjusted = true;
     }
 
@@ -236,6 +237,9 @@ auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, con
 
 auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool {
     for (auto it = otherImages.begin(); it != otherImages.end(); ++it) {
+        if (it->second.duplicate)
+            continue;
+
         QImageReader reader(it->second.pathOrDuplicateFrameName);
         if (reader.canRead()) {
             if (image.size() == reader.size()) {

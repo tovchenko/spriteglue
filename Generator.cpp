@@ -34,6 +34,23 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
 
     ImageSorter sorter(frameSizes);
     const auto sortedFrames = sorter.sort();
+
+    for (auto frameNameIt = sortedFrames->begin(); frameNameIt != sortedFrames->end();) {
+        const auto idIt = imageData->find(*frameNameIt);
+        if (idIt == imageData->end() || !idIt->second.duplicate || idIt->second.adjusted) {
+            ++frameNameIt;
+            continue;
+        }
+
+        auto notDuplicateIt = std::find(sortedFrames->begin(), sortedFrames->end(), idIt->second.pathOrDuplicateFrameName);
+        if (notDuplicateIt == sortedFrames->end())
+            throw std::exception();
+
+        sortedFrames->insert(notDuplicateIt + 1, *frameNameIt);
+        sortedFrames->erase(frameNameIt);
+        idIt->second.adjusted = true;
+    }
+
     int notUsedPercent = kBasePercent;
     int left, top, right, bottom;
     QVariantMap frames;
@@ -67,12 +84,12 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
             if (imageDataIt == imageData->end())
                 continue;
 
-            const auto& beforeTrimSize = imageDataIt->beforeCropSize;
-            const auto& cropRect = imageDataIt->cropRect;
+            const auto& beforeTrimSize = imageDataIt->second.beforeCropSize;
+            const auto& cropRect = imageDataIt->second.cropRect;
             QVariantMap frameInfo;
 
-            if (!imageDataIt->duplicate) {
-                QImage image(imageDataIt->pathOrDuplicateFrameName);
+            if (!imageDataIt->second.duplicate) {
+                QImage image(imageDataIt->second.pathOrDuplicateFrameName);
 
                 bool orientation = cropRect.width() > cropRect.height();
                 auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
@@ -110,7 +127,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
                     break;
                 }
             } else {
-                const auto otherImageInfo = frames[imageDataIt->pathOrDuplicateFrameName].toMap();
+                const auto otherImageInfo = frames[imageDataIt->second.pathOrDuplicateFrameName].toMap();
                 frameInfo["rotated"] = otherImageInfo["rotated"].toBool();
                 frameInfo["frame"] = otherImageInfo["frame"].toRect();
                 frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(

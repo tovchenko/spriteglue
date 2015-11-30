@@ -26,11 +26,12 @@ public:
 
 protected:
     struct _Data {
-        _Data() : duplicate(false) {}
+        _Data() : duplicate(false), adjusted(false) {}
         QSize   beforeCropSize;
         QRect   cropRect;
         QString pathOrDuplicateFrameName;
         bool    duplicate;
+        bool    adjusted;
     };
     typedef std::map<QString, _Data> ImageData;
 

@@ -23,7 +23,7 @@ public:
     auto setOutputFormat(QImage::Format format)->void { _outputFormat = format; }
     auto setMetaInfoSuffix(const QString& suffix)->void { _suffix = suffix; }
 
-    auto generateTo(const QString& finalImagePath)->bool;
+    auto generateTo(const QString& finalImagePath, const QString& plistPath="")->bool;
 
 protected:
     struct _Data {
@@ -42,7 +42,7 @@ protected:
     static auto _removeTempFiles(const ImageData& paths)->void;
     static auto _checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool;
     static auto _adjustSortedPaths(std::vector<QString>& paths, ImageData& imageData)->void;
-    auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath) const->bool;
+    auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath, const QString& plistPath) const->bool;
     auto _fitSize(const QSize& size) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::vector<QString>>;
     auto _scaleTrimIfNeeded() const->std::shared_ptr<ImageData>;

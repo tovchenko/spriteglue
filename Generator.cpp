@@ -21,7 +21,7 @@ Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
 }
 
-auto Generator::generateTo(const QString& finalImagePath)->bool {
+auto Generator::generateTo(const QString& finalImagePath, const QString& plistPath)->bool {
     auto imageData = _scaleTrimIfNeeded();
     ImageSorter::FrameSizes frameSizes;
     std::transform(imageData->begin(), imageData->end(), std::back_inserter(frameSizes), [](const std::pair<QString, _Data>& data) {
@@ -149,7 +149,7 @@ auto Generator::generateTo(const QString& finalImagePath)->bool {
         rect.setY(rect.y() - finalCrop.y());
     });
 
-    return _saveResults(result->copy(finalCrop), frames, finalImagePath);
+    return _saveResults(result->copy(finalCrop), frames, finalImagePath, plistPath);
 }
 
 auto Generator::_roundToPowerOf2(int value)->int {
@@ -237,7 +237,7 @@ auto Generator::_adjustSortedPaths(std::vector<QString>& paths, ImageData& image
     }
 }
 
-auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath) const->bool {
+auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath, const QString& plistPath) const->bool {
     QImageWriter writer(finalImagePath);
     writer.setFormat("png");
 
@@ -245,7 +245,7 @@ auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, con
         fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
 
         QFileInfo info(finalImagePath);
-        QFile plistFile(info.dir().path() + QDir::separator() + info.baseName() + ".plist");
+        QFile plistFile(plistPath.isEmpty() ? info.dir().path() + QDir::separator() + info.baseName() + ".plist" : plistPath);
         if (plistFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&plistFile);
 

@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
     //spritesheet.setPadding(1);
     //spritesheet.enableSquare(true);
     //spritesheet.enablePowerOf2(true);
+    spritesheet.setMetaInfoSuffix("pvr.ccz");
     if (spritesheet.generateTo("/Users/tovchenko/Desktop/test/myatlas.png"))
         return 0;
     return 1;

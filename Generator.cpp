@@ -191,35 +191,6 @@ auto Generator::_removeTempFiles(const ImageData& paths)->void {
     }
 }
 
-auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath)->bool {
-    QImageWriter writer(finalImagePath);
-    writer.setFormat("png");
-
-    if (writer.write(image)) {
-        fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
-
-        QFileInfo info(finalImagePath);
-        QFile plistFile(info.dir().path() + QDir::separator() + info.baseName() + ".plist");
-        if (plistFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream out(&plistFile);
-
-            QVariantMap meta;
-            meta["format"] = 2;
-            meta["realTextureFileName"] = meta["textureFileName"] = info.baseName() + '.' + info.completeSuffix();
-            meta["size"] = QString("{%1,%2}").arg(QString::number(image.size().width()), QString::number(image.size().height()));
-
-            QVariantMap root;
-            root["frames"] = frames;
-            root["metadata"] = meta;
-            out << PListSerializer::toPList(root);
-            plistFile.close();
-
-            return true;
-        }
-    }
-    return false;
-}
-
 auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool {
     for (auto it = otherImages.begin(); it != otherImages.end(); ++it) {
         if (it->second.duplicate)
@@ -232,7 +203,9 @@ auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImage
                 auto image2 = reader.read();
                 if (image.pixel(0, 0) == image2.pixel(0, 0) &&
                     image.pixel(size.width() - 1, size.height() - 1) == image2.pixel(size.width() - 1, size.height() - 1) &&
-                    image.pixel(size.width() / 2, size.height() / 2) == image2.pixel(size.width() / 2, size.height() / 2))
+                    image.pixel(size.width() / 2, size.height() / 2) == image2.pixel(size.width() / 2, size.height() / 2) &&
+                    image.pixel(size.width() * 3.0f/4.0f, size.height() / 4) == image2.pixel(size.width() * 3.0f/4.0f, size.height() / 4) &&
+                    image.pixel(size.width() / 4, size.height() * 3.0f/4.0f) == image2.pixel(size.width() / 4, size.height() * 3.0f/4.0f))
                 {
                     if (image == image2) {
                        out = it->first;
@@ -262,6 +235,35 @@ auto Generator::_adjustSortedPaths(std::vector<QString>& paths, ImageData& image
         paths.insert(notDuplicateIt + 1, tmp);
         idIt->second.adjusted = true;
     }
+}
+
+auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath) const->bool {
+    QImageWriter writer(finalImagePath);
+    writer.setFormat("png");
+
+    if (writer.write(image)) {
+        fprintf(stdout, "%s\n", qPrintable(finalImagePath + " - success"));
+
+        QFileInfo info(finalImagePath);
+        QFile plistFile(info.dir().path() + QDir::separator() + info.baseName() + ".plist");
+        if (plistFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&plistFile);
+
+            QVariantMap meta;
+            meta["format"] = 2;
+            meta["realTextureFileName"] = meta["textureFileName"] = info.baseName() + '.' + (_suffix.isEmpty() ? info.completeSuffix() : _suffix);
+            meta["size"] = QString("{%1,%2}").arg(QString::number(image.size().width()), QString::number(image.size().height()));
+
+            QVariantMap root;
+            root["frames"] = frames;
+            root["metadata"] = meta;
+            out << PListSerializer::toPList(root);
+            plistFile.close();
+
+            return true;
+        }
+    }
+    return false;
 }
 
 auto Generator::_fitSize(const QSize& size) const->QSize {

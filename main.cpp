@@ -42,17 +42,17 @@ auto main(int argc, char *argv[])->int {
 
     QCoreApplication app(argc, argv);
     QCommandLineParser cmd;
-    QCommandLineOption sheetOption(QStringList() << "d" << "sheet", kSheetInfo, "sheet");
-    QCommandLineOption dataOption(QStringList() << "i" << "data", kDataInfo, "data");
-    QCommandLineOption scaleOption(QStringList() << "s" << "scale", kScaleInfo, "scale");
-    QCommandLineOption trimOption(QStringList() << "t" << "trim", kTrimInfo, "trim");
-    QCommandLineOption paddingOption(QStringList() << "p" << "padding", kPaddingInfo, "padding");
-    QCommandLineOption suffixOption(QStringList() << "x" << "suffix", kSuffixInfo, "suffix");
-    QCommandLineOption maxSizeWOption(QStringList() << "w" << "max-size-w", kMaxSizeWInfo, "width");
-    QCommandLineOption maxSizeHOption(QStringList() << "h" << "max-size-h", kMaxSizeHInfo, "height");
-    QCommandLineOption formatOption(QStringList() << "o" << "opt", kFormatInfo, "format");
-    QCommandLineOption squareOption(QStringList() << "q" << "square", kSquareInfo);
-    QCommandLineOption freeSizeOption(QStringList() << "f" << "allow-free-size", kFreeSizeInfo);
+    QCommandLineOption sheetOption(QStringList() << "sheet", kSheetInfo, "sheet");
+    QCommandLineOption dataOption(QStringList() << "data", kDataInfo, "data");
+    QCommandLineOption scaleOption(QStringList() << "scale", kScaleInfo, "scale");
+    QCommandLineOption trimOption(QStringList() << "trim", kTrimInfo, "trim");
+    QCommandLineOption paddingOption(QStringList() << "padding", kPaddingInfo, "padding");
+    QCommandLineOption suffixOption(QStringList() << "suffix", kSuffixInfo, "suffix");
+    QCommandLineOption maxSizeWOption(QStringList() << "max-size-w", kMaxSizeWInfo, "width");
+    QCommandLineOption maxSizeHOption(QStringList() << "max-size-h", kMaxSizeHInfo, "height");
+    QCommandLineOption formatOption(QStringList() << "opt", kFormatInfo, "format");
+    QCommandLineOption squareOption(QStringList() << "square", kSquareInfo);
+    QCommandLineOption freeSizeOption(QStringList() << "allow-free-size", kFreeSizeInfo);
     cmd.addOptions(QList<QCommandLineOption>() << sheetOption << dataOption << scaleOption << trimOption << paddingOption << suffixOption <<
                    maxSizeWOption << maxSizeHOption << formatOption << squareOption << freeSizeOption);
     cmd.process(app.arguments());

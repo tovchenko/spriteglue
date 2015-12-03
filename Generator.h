@@ -21,7 +21,7 @@ public:
     auto setIsSquare(bool square)->void { _square = square; }
     auto setIsPowerOf2(bool isPow2)->void { _isPowerOf2 = isPow2; }
     auto setOutputFormat(QImage::Format format)->void { _outputFormat = format; }
-    auto setMetaInfoSuffix(const QString& suffix)->void { _suffix = suffix; }
+    auto setTextureSuffixInData(const QString& suffix)->void { _suffix = suffix; }
 
     auto generateTo(const QString& finalImagePath, const QString& plistPath="")->bool;
 

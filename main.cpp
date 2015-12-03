@@ -4,10 +4,33 @@
 #include "Generator.h"
 
 const int kDefaultTextureSize = 4096;
+const auto kSheetInfo = "result texture path";
+const auto kDataInfo = "data file path (default: same path with texture)";
+const auto kScaleInfo = "scale image factor (default: 1)";
+const auto kTrimInfo = "trims source images according to mode (default: max-alpha, available: all-alpha, none)";
+const auto kPaddingInfo = "padding between sprites (default: 0)";
+const auto kSuffixInfo = "suffix which will be added to atlas data file (default: will be same as resulting texture)";
+const auto kMaxSizeWInfo = "max atlas width. if undefined it will use height instead (default: 4096)";
+const auto kMaxSizeHInfo = "max atlas height. if undefined it will use width instead (default: 4096)";
+const auto kFormatInfo = "color format of resulting texture (default: rgba8888, available: rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p)";
+const auto kSquareInfo = "makes texture square (default: isn\'t square)";
+const auto kFreeSizeInfo = "makes texture non power of 2 (default: is powerOf2)";
 
 static auto _printUsage()->void {
-    fprintf(stdout, "\n%s\n", qPrintable("spritesheet"));
-    fprintf(stdout, "\t%s\t%s\n", qPrintable("--trim"), qPrintable("none, all-alpha, max-alpha(default)"));
+    fprintf(stdout, "\n%s\n", qPrintable("spritesheet [path to directory with source images]"));
+    fprintf(stdout, "\n%s\n", qPrintable("required:"));
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--sheet"), kSheetInfo);
+    fprintf(stdout, "\n%s\n", qPrintable("optional:"));
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--data"), kDataInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--scale"), kScaleInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--trim"), kTrimInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--padding"), kPaddingInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--suffix"), kSuffixInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-w"), kMaxSizeWInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-h"), kMaxSizeHInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--opt"), kFormatInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--square"), kSquareInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--allow-free-size"), kFreeSizeInfo);
 }
 
 auto main(int argc, char *argv[])->int {
@@ -19,12 +42,19 @@ auto main(int argc, char *argv[])->int {
 
     QCoreApplication app(argc, argv);
     QCommandLineParser cmd;
-    QCommandLineOption scaleOption(QStringList() << "s" << "scale", "scale image factor.", "scale");
-    QCommandLineOption trimOption(QStringList() << "t" << "trim", "needs to trim images according to mode.", "trim");
-    QCommandLineOption paddingOption(QStringList() << "p" << "padding", "padding between sprites.", "padding");
-    QCommandLineOption maxSizeWOption(QStringList() << "w" << "max-size-w", "max atlas width. if undefined it will use height instead.", "width");
-    QCommandLineOption maxSizeHOption(QStringList() << "h" << "max-size-h", "max atlas height. if undefined it will use width instead.", "height");
-    cmd.addOptions(QList<QCommandLineOption>() << scaleOption << trimOption << paddingOption << maxSizeWOption << maxSizeHOption);
+    QCommandLineOption sheetOption(QStringList() << "d" << "sheet", kSheetInfo, "sheet");
+    QCommandLineOption dataOption(QStringList() << "i" << "data", kDataInfo, "data");
+    QCommandLineOption scaleOption(QStringList() << "s" << "scale", kScaleInfo, "scale");
+    QCommandLineOption trimOption(QStringList() << "t" << "trim", kTrimInfo, "trim");
+    QCommandLineOption paddingOption(QStringList() << "p" << "padding", kPaddingInfo, "padding");
+    QCommandLineOption suffixOption(QStringList() << "x" << "suffix", kSuffixInfo, "suffix");
+    QCommandLineOption maxSizeWOption(QStringList() << "w" << "max-size-w", kMaxSizeWInfo, "width");
+    QCommandLineOption maxSizeHOption(QStringList() << "h" << "max-size-h", kMaxSizeHInfo, "height");
+    QCommandLineOption formatOption(QStringList() << "o" << "opt", kFormatInfo, "format");
+    QCommandLineOption squareOption(QStringList() << "q" << "square", kSquareInfo);
+    QCommandLineOption freeSizeOption(QStringList() << "f" << "allow-free-size", kFreeSizeInfo);
+    cmd.addOptions(QList<QCommandLineOption>() << sheetOption << dataOption << scaleOption << trimOption << paddingOption << suffixOption <<
+                   maxSizeWOption << maxSizeHOption << formatOption << squareOption << freeSizeOption);
     cmd.process(app.arguments());
 
     const QStringList srcPath = cmd.positionalArguments();
@@ -34,6 +64,16 @@ auto main(int argc, char *argv[])->int {
         return 1;
     }
     Generator spritesheet(*srcPath.begin());
+
+    if (!cmd.isSet(sheetOption)) {
+        fprintf(stderr, "%s\n", qPrintable("No destination texture path passed."));
+        _printUsage();
+        return 1;
+    }
+
+    QString dataPath;
+    if (cmd.isSet(dataOption))
+        dataPath = cmd.value(dataOption);
     
     float scale = 1.0f;
     if (cmd.isSet(scaleOption)) {
@@ -83,7 +123,7 @@ auto main(int argc, char *argv[])->int {
     }
     spritesheet.setTrimMode(trimMode);
 
-    int padding = 1;
+    int padding = 0;
     if (cmd.isSet(paddingOption)) {
         bool ok = false;
         padding = cmd.value(paddingOption).toInt(&ok);
@@ -95,14 +135,31 @@ auto main(int argc, char *argv[])->int {
     }
     spritesheet.setPadding(padding);
 
+    if (cmd.isSet(suffixOption))
+        spritesheet.setTextureSuffixInData(cmd.value(suffixOption));
 
-    //spritesheet.trim(Generator::TrimMode::NONE);
-    //spritesheet.setPadding(1);
-    //spritesheet.enableSquare(true);
-    //spritesheet.enablePowerOf2(true);
-    spritesheet.setMetaInfoSuffix("pvr.ccz");
-    if (spritesheet.generateTo("/Users/tovchenko/Desktop/test/myatlas.png"))
+    QImage::Format format = QImage::Format::Format_RGBA8888;
+    if (cmd.isSet(formatOption)) {
+        const auto fmt = cmd.value(formatOption);
+        if ("rgb888" == fmt) format = QImage::Format::Format_RGB888;
+        else if ("rgb666" == fmt) format = QImage::Format::Format_RGB666;
+        else if ("rgb555" == fmt) format = QImage::Format::Format_RGB555;
+        else if ("rgb444" == fmt) format = QImage::Format::Format_RGB444;
+        else if ("alpha8" == fmt) format = QImage::Format::Format_Alpha8;
+        else if ("grayscale8" == fmt) format = QImage::Format::Format_Grayscale8;
+        else if ("mono" == fmt) format = QImage::Format::Format_Mono;
+        else if ("rgba8888p" == fmt) format = QImage::Format::Format_RGBA8888_Premultiplied;
+    }
+    spritesheet.setOutputFormat(format);
+
+    spritesheet.setIsSquare(cmd.isSet(squareOption));
+    spritesheet.setIsPowerOf2(!cmd.isSet(freeSizeOption));
+
+    if (spritesheet.generateTo(cmd.value(sheetOption), dataPath))
         return 0;
+
+    fprintf(stderr, "%s\n", qPrintable("Something went wrong!"));
+    _printUsage();
     return 1;
 }
 

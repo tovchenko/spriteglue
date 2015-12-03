@@ -8,7 +8,7 @@ const auto kSheetInfo = "result texture path";
 const auto kDataInfo = "data file path (default: same path with texture)";
 const auto kScaleInfo = "scale image factor (default: 1)";
 const auto kTrimInfo = "trims source images according to mode (default: max-alpha, available: all-alpha, none)";
-const auto kPaddingInfo = "padding between sprites (default: 0)";
+const auto kPaddingInfo = "padding between sprites (default: 1)";
 const auto kSuffixInfo = "suffix which will be added to atlas data file (default: will be same as resulting texture)";
 const auto kMaxSizeWInfo = "max atlas width. if undefined it will use height instead (default: 4096)";
 const auto kMaxSizeHInfo = "max atlas height. if undefined it will use width instead (default: 4096)";
@@ -123,7 +123,7 @@ auto main(int argc, char *argv[])->int {
     }
     spritesheet.setTrimMode(trimMode);
 
-    int padding = 0;
+    int padding = 1;
     if (cmd.isSet(paddingOption)) {
         bool ok = false;
         padding = cmd.value(paddingOption).toInt(&ok);

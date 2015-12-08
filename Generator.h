@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <memory>
+#include <set>
 
 class Generator {
 public:
@@ -16,7 +17,8 @@ public:
 
     auto setScale(float scale)->void { _scale = scale; }
     auto setMaxSize(const QSize& size)->void { _maxSize = size; }
-    auto setPadding(int padding)->void { _padding = padding; }
+    auto setBasePadding(int padding)->void { _padding = padding; }
+    auto setInnerPadding(int padding)->void { _innerPadding = padding; }
     auto setTrimMode(TrimMode mode)->void { _trim = mode; }
     auto setIsSquare(bool square)->void { _square = square; }
     auto setIsPowerOf2(bool isPow2)->void { _isPowerOf2 = isPow2; }
@@ -27,11 +29,11 @@ public:
 
 protected:
     struct _Data {
-        _Data() : duplicate(false), adjusted(false) {}
+        _Data() : duplicated(false), adjusted(false) {}
         QSize   beforeCropSize;
         QRect   cropRect;
         QString pathOrDuplicateFrameName;
-        bool    duplicate;
+        bool    duplicated;
         bool    adjusted;
     };
     typedef std::map<QString, _Data> ImageData;
@@ -40,16 +42,17 @@ protected:
     static auto _floorToPowerOf2(int value)->int;
     static auto _adjustFrames(QVariantMap& frames, const std::function<void(QRect&)>& cb)->void;
     static auto _removeTempFiles(const ImageData& paths)->void;
-    static auto _checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool;
+    static auto _checkDuplicate(const QImage& image, const std::map<QString, QString> paths, QString& out)->bool;
     static auto _adjustSortedPaths(std::vector<QString>& paths, ImageData& imageData)->void;
     auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath, const QString& plistPath) const->bool;
     auto _fitSize(const QSize& size) const->QSize;
-    auto _readFileList() const->std::shared_ptr<std::vector<QString>>;
-    auto _scaleTrimIfNeeded() const->std::shared_ptr<ImageData>;
+    auto _readFileList() const->std::shared_ptr<std::set<QString>>;
+    auto _processImages() const->std::shared_ptr<ImageData>;
 
     float           _scale = 1.0f;
     QSize           _maxSize = { 0, 0 };
     int             _padding = 0;
+    int             _innerPadding = 1;
     TrimMode        _trim = MAX_ALPHA;
     bool            _square = false;
     bool            _isPowerOf2 = false;

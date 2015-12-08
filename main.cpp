@@ -14,7 +14,7 @@ const auto kMaxSizeWInfo = "max atlas width. if undefined it will use height ins
 const auto kMaxSizeHInfo = "max atlas height. if undefined it will use width instead (default: 4096)";
 const auto kFormatInfo = "color format of resulting texture (default: rgba8888, available: rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p)";
 const auto kSquareInfo = "makes texture square (default: isn\'t square)";
-const auto kFreeSizeInfo = "makes texture non power of 2 (default: is powerOf2)";
+const auto kPowerOf2Info = "makes texture power of 2 (default: isn\'t powerOf2)";
 
 static auto _printUsage()->void {
     fprintf(stdout, "\n%s\n", qPrintable("spritesheet [path to directory with source images]"));
@@ -30,7 +30,7 @@ static auto _printUsage()->void {
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-h"), kMaxSizeHInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--opt"), kFormatInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--square"), kSquareInfo);
-    fprintf(stdout, "\t%s\t%s\n", qPrintable("--allow-free-size"), kFreeSizeInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--powerOf2"), kPowerOf2Info);
 }
 
 auto main(int argc, char *argv[])->int {
@@ -47,14 +47,15 @@ auto main(int argc, char *argv[])->int {
     QCommandLineOption scaleOption(QStringList() << "scale", kScaleInfo, "scale");
     QCommandLineOption trimOption(QStringList() << "trim", kTrimInfo, "trim");
     QCommandLineOption paddingOption(QStringList() << "padding", kPaddingInfo, "padding");
+    QCommandLineOption innerPaddingOption(QStringList() << "inner-padding", kPaddingInfo, "innerPadding");
     QCommandLineOption suffixOption(QStringList() << "suffix", kSuffixInfo, "suffix");
     QCommandLineOption maxSizeWOption(QStringList() << "max-size-w", kMaxSizeWInfo, "width");
     QCommandLineOption maxSizeHOption(QStringList() << "max-size-h", kMaxSizeHInfo, "height");
     QCommandLineOption formatOption(QStringList() << "opt", kFormatInfo, "format");
     QCommandLineOption squareOption(QStringList() << "square", kSquareInfo);
-    QCommandLineOption freeSizeOption(QStringList() << "allow-free-size", kFreeSizeInfo);
-    cmd.addOptions(QList<QCommandLineOption>() << sheetOption << dataOption << scaleOption << trimOption << paddingOption << suffixOption <<
-                   maxSizeWOption << maxSizeHOption << formatOption << squareOption << freeSizeOption);
+    QCommandLineOption powerOf2Option(QStringList() << "powerOf2", kPowerOf2Info);
+    cmd.addOptions(QList<QCommandLineOption>() << sheetOption << dataOption << scaleOption << trimOption << paddingOption << innerPaddingOption
+                   << suffixOption << maxSizeWOption << maxSizeHOption << formatOption << squareOption << powerOf2Option);
     cmd.process(app.arguments());
 
     const QStringList srcPath = cmd.positionalArguments();
@@ -123,7 +124,7 @@ auto main(int argc, char *argv[])->int {
     }
     spritesheet.setTrimMode(trimMode);
 
-    int padding = 1;
+    int padding = 0;
     if (cmd.isSet(paddingOption)) {
         bool ok = false;
         padding = cmd.value(paddingOption).toInt(&ok);
@@ -133,7 +134,19 @@ auto main(int argc, char *argv[])->int {
             return 1;
         }
     }
-    spritesheet.setPadding(padding);
+    spritesheet.setBasePadding(padding);
+
+    int innerPadding = 1;
+    if (cmd.isSet(innerPaddingOption)) {
+        bool ok = false;
+        innerPadding = cmd.value(innerPaddingOption).toInt(&ok);
+        if (!ok) {
+            fprintf(stderr, "%s\n", qPrintable("The value after --inner-padding is not a number value"));
+            _printUsage();
+            return 1;
+        }
+    }
+    spritesheet.setInnerPadding(innerPadding);
 
     if (cmd.isSet(suffixOption))
         spritesheet.setTextureSuffixInData(cmd.value(suffixOption));
@@ -153,7 +166,7 @@ auto main(int argc, char *argv[])->int {
     spritesheet.setOutputFormat(format);
 
     spritesheet.setIsSquare(cmd.isSet(squareOption));
-    spritesheet.setIsPowerOf2(!cmd.isSet(freeSizeOption));
+    spritesheet.setIsPowerOf2(cmd.isSet(powerOf2Option));
 
     if (spritesheet.generateTo(cmd.value(sheetOption), dataPath))
         return 0;

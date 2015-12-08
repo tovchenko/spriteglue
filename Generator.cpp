@@ -13,6 +13,7 @@
 #include <QTextStream>
 
 #include <cmath>
+#include <map>
 
 const int kBasePercent = 10;
 const int kStepPercent = 2;
@@ -22,14 +23,14 @@ Generator::Generator(const QString& inputImageDirPath)
 }
 
 auto Generator::generateTo(const QString& finalImagePath, const QString& plistPath)->bool {
-    auto imageData = _scaleTrimIfNeeded();
+    auto imageData = _processImages();
     ImageSorter::FrameSizes frameSizes;
     std::transform(imageData->begin(), imageData->end(), std::back_inserter(frameSizes), [](const std::pair<QString, _Data>& data) {
         return std::make_pair(data.first, data.second.cropRect.size());
     });
 
     auto area = std::accumulate(imageData->begin(), imageData->end(), 0, [](int sum, const std::pair<QString, _Data>& data) {
-        return data.second.duplicate ? sum : sum + (data.second.cropRect.width() * data.second.cropRect.height());
+        return data.second.duplicated ? sum : sum + (data.second.cropRect.width() * data.second.cropRect.height());
     });
 
     ImageSorter sorter(frameSizes);
@@ -65,8 +66,8 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         right = 0;
         bottom = 0;
 
-        for (auto it = sortedFrames->begin(); it != sortedFrames->end(); ++it) {
-            const auto imageDataIt = imageData->find(*it);
+        for (auto frame : *sortedFrames) {
+            const auto imageDataIt = imageData->find(frame);
             if (imageDataIt == imageData->end())
                 continue;
 
@@ -74,27 +75,20 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
             const auto& cropRect = imageDataIt->second.cropRect;
             QVariantMap frameInfo;
 
-            if (!imageDataIt->second.duplicate) {
+            if (!imageDataIt->second.duplicated) {
                 QImage image(imageDataIt->second.pathOrDuplicateFrameName);
 
                 bool orientation = cropRect.width() > cropRect.height();
-                auto packedRect = bin.Insert(cropRect.width() + _padding * 2, cropRect.height() + _padding * 2, rbp::MaxRectsBinPack::RectBestLongSideFit);
+                auto packedRect = bin.Insert(cropRect.width() + _padding * 2 + _innerPadding, cropRect.height() + _padding * 2 + _innerPadding, rbp::MaxRectsBinPack::RectBestLongSideFit);
 
                 if (packedRect.height > 0) {
                     const bool isRotated = packedRect.width > packedRect.height != orientation;
 
-                    QRect finalRect(packedRect.x + _padding,
-                                    packedRect.y + _padding,
-                                    cropRect.width() - 2 * _padding,
-                                    cropRect.height() - 2 * _padding);
-
                     frameInfo["rotated"] = isRotated;
-                    frameInfo["frame"] = finalRect;
-                    frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
-                                QString::number(cropRect.x()),
-                                QString::number(cropRect.y()),
-                                QString::number(finalRect.width()),
-                                QString::number(finalRect.height()));
+                    frameInfo["frame"] = QRect(packedRect.x + _padding,
+                                            packedRect.y + _padding,
+                                            cropRect.width(),
+                                            cropRect.height());
 
                     if (isRotated)
                         image = rotate90(image);
@@ -116,11 +110,6 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
                 const auto otherImageInfo = frames[imageDataIt->second.pathOrDuplicateFrameName].toMap();
                 frameInfo["rotated"] = otherImageInfo["rotated"].toBool();
                 frameInfo["frame"] = otherImageInfo["frame"].toRect();
-                frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
-                            QString::number(cropRect.x()),
-                            QString::number(cropRect.y()),
-                            QString::number(cropRect.width() - 2 * _padding),
-                            QString::number(cropRect.height() - 2 * _padding));
             }
 
             if (beforeTrimSize.width() != cropRect.width() || beforeTrimSize.height() != cropRect.height()) {
@@ -131,17 +120,25 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
                 frameInfo["offset"] = "{0,0}";
             }
 
-            frameInfo["sourceSize"] = QString("{%1,%2}").arg(
-                        QString::number(beforeTrimSize.width()),
-                        QString::number(beforeTrimSize.height()));
+            frameInfo["sourceColorRect"] = QString("{{%1,%2},{%3,%4}}").arg(
+                                QString::number(cropRect.x()),
+                                QString::number(cropRect.y()),
+                                QString::number(cropRect.width()),
+                                QString::number(cropRect.height()));
 
-            frames[*it] = frameInfo;
+            frameInfo["sourceSize"] = QString("{%1,%2}").arg(
+                        QString::number(beforeTrimSize.width() + 2 * _padding + _innerPadding),
+                        QString::number(beforeTrimSize.height() + 2 * _padding + _innerPadding));
+
+            frames[frame] = frameInfo;
         }
         painter.end();
     } while (!enoughSpace);
 
     _removeTempFiles(*imageData);
 
+    right -= _innerPadding;
+    bottom -= _innerPadding;
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
     _adjustFrames(frames, [&finalCrop](QRect& rect) {
@@ -184,19 +181,16 @@ auto Generator::_adjustFrames(QVariantMap& frames, const std::function<void(QRec
 
 auto Generator::_removeTempFiles(const ImageData& paths)->void {
     for (auto data : paths) {
-        if (!data.second.duplicate) {
+        if (!data.second.duplicated) {
             QFile file(data.second.pathOrDuplicateFrameName);
             file.remove();
         }
     }
 }
 
-auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImages, QString& out)->bool {
-    for (auto it = otherImages.begin(); it != otherImages.end(); ++it) {
-        if (it->second.duplicate)
-            continue;
-
-        QImageReader reader(it->second.pathOrDuplicateFrameName);
+auto Generator::_checkDuplicate(const QImage& image, const std::map<QString, QString> paths, QString& out)->bool {
+    for (auto item : paths) {
+        QImageReader reader(item.second);
         if (reader.canRead()) {
             if (image.size() == reader.size()) {
                 auto size = image.size();
@@ -208,7 +202,7 @@ auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImage
                     image.pixel(size.width() / 4, size.height() * 3.0f/4.0f) == image2.pixel(size.width() / 4, size.height() * 3.0f/4.0f))
                 {
                     if (image == image2) {
-                       out = it->first;
+                       out = item.first;
                        return true;
                     }
                 }
@@ -221,7 +215,7 @@ auto Generator::_checkDuplicate(const QImage& image, const ImageData& otherImage
 auto Generator::_adjustSortedPaths(std::vector<QString>& paths, ImageData& imageData)->void {
     for (auto frameNameIt = paths.begin(); frameNameIt != paths.end();) {
         const auto idIt = imageData.find(*frameNameIt);
-        if (idIt == imageData.end() || !idIt->second.duplicate || idIt->second.adjusted) {
+        if (idIt == imageData.end() || !idIt->second.duplicated || idIt->second.adjusted) {
             ++frameNameIt;
             continue;
         }
@@ -281,53 +275,56 @@ auto Generator::_fitSize(const QSize& size) const->QSize {
     return result;
 }
 
-auto Generator::_readFileList() const->std::shared_ptr<std::vector<QString>> {
-    auto result = std::make_shared<std::vector<QString>>();
+auto Generator::_readFileList() const->std::shared_ptr<std::set<QString>> {
+    auto result = std::make_shared<std::set<QString>>();
     QDirIterator it(_inputImageDirPath, QStringList() << "*.*", QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
-        result->push_back(it.next());
+        result->insert(it.next());
     }
     return result;
 }
 
-auto Generator::_scaleTrimIfNeeded() const->std::shared_ptr<ImageData> {
+auto Generator::_processImages() const->std::shared_ptr<ImageData> {
     auto result = std::make_shared<ImageData>();
-    auto files = _readFileList();
-    for (auto it = files->begin(); it != files->end(); ++it) {
-        QImage image(*it);
 
-        if (_scale < 1.0f) {
-            image = image.scaled(_scale * image.width(), _scale * image.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        }
+    const auto files = _readFileList();
+    for (auto file : *files) {
+        QImage image(file);
+        if (_scale < 1.0f)
+            image = image.scaledToWidth(_scale * image.width(), Qt::SmoothTransformation);
 
         const QSize beforeTrimSize = image.size();
         QRect cropRect(QPoint(0, 0), beforeTrimSize);
-        if (_trim != TrimMode::NONE) {
+        if (_trim != TrimMode::NONE)
             image = ImageTrim::createImage(image, _trim == TrimMode::MAX_ALPHA, cropRect);
-        }
 
-        const QFileInfo fileInfo(*it);
-
-        QString duplicateFrameName;
-        if (_checkDuplicate(image, *result, duplicateFrameName)) {
+        const QFileInfo fileInfo(file);
+        const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
+        QImageWriter writer(tmpImagePath);
+        writer.setFormat("png");
+        if (writer.write(image)) {
             _Data data;
             data.beforeCropSize = beforeTrimSize;
             data.cropRect = cropRect;
-            data.pathOrDuplicateFrameName = duplicateFrameName;
-            data.duplicate = true;
+            data.pathOrDuplicateFrameName = tmpImagePath;
             result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
-        } else {
-            const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
-            QImageWriter writer(tmpImagePath);
-            writer.setFormat("png");
-            if (writer.write(image)) {
-                _Data data;
-                data.beforeCropSize = beforeTrimSize;
-                data.cropRect = cropRect;
-                data.pathOrDuplicateFrameName = tmpImagePath;
-                result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
-            }
         }
     }
+
+    std::map<QString, QString> framePathData;
+    for (auto& item : *result) {
+        QImage image(item.second.pathOrDuplicateFrameName);
+        QString duplicateFrameName;
+        const QString itemPath = item.second.pathOrDuplicateFrameName;
+        if (_checkDuplicate(image, framePathData, duplicateFrameName)) {
+            QFile file(itemPath);
+            file.remove();
+            item.second.pathOrDuplicateFrameName = duplicateFrameName;
+            item.second.duplicated = true;
+        } else {
+            framePathData.insert(std::make_pair(item.first, itemPath));
+        }
+    }
+
     return result;
 }

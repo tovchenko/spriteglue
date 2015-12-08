@@ -171,7 +171,7 @@ auto main(int argc, char *argv[])->int {
     if (spritesheet.generateTo(cmd.value(sheetOption), dataPath))
         return 0;
 
-    fprintf(stderr, "%s\n", qPrintable("Something went wrong!"));
+    fprintf(stderr, "%s\n", qPrintable("Error!"));
     _printUsage();
     return 1;
 }

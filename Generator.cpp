@@ -146,6 +146,12 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
     bottom -= _innerPadding;
     QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
     finalCrop.setSize(_fitSize(finalCrop.size()));
+
+    if (finalCrop.width() > _maxSize.width() || finalCrop.height() > _maxSize.height()) {
+        fprintf(stderr, "%s%d%s%d\n", qPrintable(finalImagePath + " - too large for available max size: "), _maxSize.width(), "x", _maxSize.height());
+        return false;
+    }
+
     _adjustFrames(frames, [&finalCrop](QRect& rect) {
         rect.setX(rect.x() - finalCrop.x());
         rect.setY(rect.y() - finalCrop.y());

@@ -17,6 +17,7 @@
 
 const int kBasePercent = 10;
 const int kStepPercent = 2;
+const int kAreaInnerPaddingMagic = 2;
 
 Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
@@ -29,8 +30,12 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         return std::make_pair(data.first, data.second.cropRect.size());
     });
 
-    auto area = std::accumulate(imageData->begin(), imageData->end(), 0, [](int sum, const std::pair<QString, _Data>& data) {
-        return data.second.duplicated ? sum : sum + (data.second.cropRect.width() * data.second.cropRect.height());
+    auto area = std::accumulate(imageData->begin(), imageData->end(), 0, [this](int sum, const std::pair<QString, _Data>& data) {
+        return data.second.duplicated
+            ? sum
+            : sum + (
+                (data.second.cropRect.width() + 2 * _padding + _innerPadding / kAreaInnerPaddingMagic) *
+                (data.second.cropRect.height() + 2 * _padding + _innerPadding / kAreaInnerPaddingMagic));
     });
 
     ImageSorter sorter(frameSizes);
@@ -66,7 +71,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         right = 0;
         bottom = 0;
 
-        for (auto frame : *sortedFrames) {
+        for (const auto& frame : *sortedFrames) {
             const auto imageDataIt = imageData->find(frame);
             if (imageDataIt == imageData->end())
                 continue;
@@ -79,7 +84,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
                 QImage image(imageDataIt->second.pathOrDuplicateFrameName);
 
                 bool orientation = cropRect.width() > cropRect.height();
-                auto packedRect = bin.Insert(cropRect.width() + _padding * 2 + _innerPadding, cropRect.height() + _padding * 2 + _innerPadding, rbp::MaxRectsBinPack::RectBestLongSideFit);
+                const auto packedRect = bin.Insert(cropRect.width() + _padding * 2 + _innerPadding, cropRect.height() + _padding * 2 + _innerPadding, rbp::MaxRectsBinPack::RectBestLongSideFit);
 
                 if (packedRect.height > 0) {
                     const bool isRotated = packedRect.width > packedRect.height != orientation;

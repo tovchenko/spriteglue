@@ -44,6 +44,11 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
     _adjustSortedPaths(*sortedFrames, *imageData);
 
     int notUsedPercent = kBasePercent;
+    int desiredRatioWidth = _maxSize.width() / _maxSize.height();
+    desiredRatioWidth = desiredRatioWidth != 0 ? desiredRatioWidth : 1;
+    int desiredRatioHeight = _maxSize.height() / _maxSize.width();
+    desiredRatioHeight = desiredRatioHeight != 0 ? desiredRatioHeight : 1;
+
     int left, top, right, bottom;
     QVariantMap frames;
     std::unique_ptr<QImage> result;
@@ -53,7 +58,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         enoughSpace = true;
         notUsedPercent += kStepPercent;
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
-        QSize beforeSize(side, side);
+        QSize beforeSize(side * desiredRatioWidth, side * desiredRatioHeight);
         if (!_square && _isPowerOf2) {
             beforeSize.setWidth(_floorToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
@@ -148,7 +153,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
     finalCrop.setSize(_fitSize(finalCrop.size()));
 
     if (finalCrop.width() > _maxSize.width() || finalCrop.height() > _maxSize.height()) {
-        fprintf(stderr, "%s%d%s%d\n", qPrintable(finalImagePath + " - too large for available max size: "), _maxSize.width(), "x", _maxSize.height());
+        fprintf(stderr, "%s%d%s%d%s%d%s%d\n", qPrintable(finalImagePath + " "), finalCrop.width(), "x", finalCrop.height(), " - too large for available max size: ", _maxSize.width(), "x", _maxSize.height());
         return false;
     }
 

@@ -65,7 +65,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         } else if (_square && _isPowerOf2) {
             beforeSize.setWidth(_roundToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
-        } else {
+        } else if (!_square) {
             beforeSize.setWidth(side * desiredRatioWidth);
             beforeSize.setHeight(side * desiredRatioHeight);
         }

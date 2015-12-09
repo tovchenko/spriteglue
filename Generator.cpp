@@ -71,11 +71,11 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         }
 
         rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());
-        result = std::move(std::unique_ptr<QImage>(new QImage(beforeSize, _outputFormat)));
+        result = std::move(std::unique_ptr<QImage>(new QImage(_maxSize, _outputFormat)));
         QPainter painter(result.get());
         frames.clear();
-        left = beforeSize.width();
-        top = beforeSize.height();
+        left = beforeSize.width() - 1;
+        top = beforeSize.height() - 1;
         right = 0;
         bottom = 0;
 

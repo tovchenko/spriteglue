@@ -58,13 +58,16 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         enoughSpace = true;
         notUsedPercent += kStepPercent;
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
-        QSize beforeSize(side * desiredRatioWidth, side * desiredRatioHeight);
+        QSize beforeSize(side, side);
         if (!_square && _isPowerOf2) {
             beforeSize.setWidth(_floorToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
         } else if (_square && _isPowerOf2) {
             beforeSize.setWidth(_roundToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
+        } else {
+            beforeSize.setWidth(side * desiredRatioWidth);
+            beforeSize.setHeight(side * desiredRatioHeight);
         }
 
         rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());

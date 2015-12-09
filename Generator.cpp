@@ -156,7 +156,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
     finalCrop.setSize(_fitSize(finalCrop.size()));
 
     if (finalCrop.width() > _maxSize.width() || finalCrop.height() > _maxSize.height()) {
-        fprintf(stderr, "%s%d%s%d%s%d%s%d\n", qPrintable(finalImagePath + " "), finalCrop.width(), "x", finalCrop.height(), " - too large for available max size: ", _maxSize.width(), "x", _maxSize.height());
+        fprintf(stderr, "%s%dx%d%s%dx%d\n", qPrintable(finalImagePath + " "), finalCrop.width(), finalCrop.height(), " - too large for available max size: ", _maxSize.width(), _maxSize.height());
         return false;
     }
 

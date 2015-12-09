@@ -15,7 +15,7 @@
 #include <cmath>
 #include <map>
 
-const int kBasePercent = 10;
+const int kBasePercent = 15;
 const int kStepPercent = 2;
 const int kAreaInnerPaddingMagic = 2;
 

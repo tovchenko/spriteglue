@@ -2,6 +2,7 @@ spriteglue
 ==============
 
 SpriteGlue is command-line spritesheet (a.k.a. Texture Atlas) generator written in Qt.
+You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
 
 ###Supported spritesheet formats###
 * cocos2d

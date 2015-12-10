@@ -7,7 +7,7 @@ SpriteGlue is command-line spritesheet (a.k.a. Texture Atlas) generator written 
 * cocos2d
 
 ###Usage###
-  **Command Line**
+* **Command Line**
     ```bash
     $ spriteglue assets_folder
     ```
@@ -30,7 +30,7 @@ SpriteGlue is command-line spritesheet (a.k.a. Texture Atlas) generator written 
     --opt           color format of resulting texture (rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
     ```
 
-  **Example**
+* **Example**
     ```bash
     spriteglue /Users/tovchenko/myassets --sheet /Users/tovchenko/myatlas.png --max-size-w 2048 --scale 0.5 --suffix pvr.ccz --square --powerOf2
     ```

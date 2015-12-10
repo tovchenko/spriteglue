@@ -1,3 +1,8 @@
+/** @file Rect.h
+    @author Jukka Jylänki
+    This work is released to Public Domain, do whatever you want with it.
+*/
+
 #ifndef RECT
 #define RECT
 

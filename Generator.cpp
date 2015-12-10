@@ -1,3 +1,19 @@
+/* Generator.cpp
+Copyright (C) 2015 Taras Tovchenko
+Email: doctorset@gmail.com
+
+You can redistribute and/or modify this software under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this
+program; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+Suite 330, Boston, MA 02111-1307 USA */
+
 #include "Generator.h"
 #include "imageTools/ImageTrim.h"
 #include "binPack/MaxRectsBinPack.h"
@@ -15,7 +31,7 @@
 #include <cmath>
 #include <map>
 
-const int kBasePercent = 15;
+const int kBasePercent = 10;
 const int kStepPercent = 2;
 const int kAreaInnerPaddingMagic = 2;
 
@@ -51,7 +67,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
 
     int left, top, right, bottom;
     QVariantMap frames;
-    std::unique_ptr<QImage> result;
+    QImage result(_maxSize, _outputFormat);
 
     bool enoughSpace;
     do {
@@ -71,8 +87,8 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         }
 
         rbp::MaxRectsBinPack bin(beforeSize.width(), beforeSize.height());
-        result = std::move(std::unique_ptr<QImage>(new QImage(_maxSize, _outputFormat)));
-        QPainter painter(result.get());
+        result.fill(QColor(0, 0, 0 ,0));
+        QPainter painter(&result);
         frames.clear();
         left = beforeSize.width() - 1;
         top = beforeSize.height() - 1;
@@ -165,7 +181,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         rect.setY(rect.y() - finalCrop.y());
     });
 
-    return _saveResults(result->copy(finalCrop), frames, finalImagePath, plistPath);
+    return _saveResults(result.copy(finalCrop), frames, finalImagePath, plistPath);
 }
 
 auto Generator::_roundToPowerOf2(int value)->int {
@@ -328,6 +344,11 @@ auto Generator::_processImages() const->std::shared_ptr<ImageData> {
             data.pathOrDuplicateFrameName = tmpImagePath;
             result->insert(std::make_pair(fileInfo.baseName() + '.' + fileInfo.completeSuffix(), data));
         }
+    }
+
+    if (result->size() < files->size()) {
+        fprintf(stderr, "%s\n", "too small scale coefficient, try to choose bigger.");
+        result->clear();
     }
 
     std::map<QString, QString> framePathData;

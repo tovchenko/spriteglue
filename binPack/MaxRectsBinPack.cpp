@@ -1,3 +1,9 @@
+/** @file MaxRectsBinPack.cpp
+    @author Jukka Jylänki
+    @brief Implements different bin packer algorithms that use the MAXRECTS data structure.
+    This work is released to Public Domain, do whatever you want with it.
+*/
+
 #include <utility>
 #include <iostream>
 #include <limits>

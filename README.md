@@ -1,7 +1,7 @@
-![spritesheet.js](http://i.imgur.com/RcHZ2qZ.png)
+spriteglue
 ==============
 
-Spritesheet.js is command-line spritesheet (a.k.a. Texture Atlas) generator written in node.js.
+SpriteGlue is command-line spritesheet (a.k.a. Texture Atlas) generator written in Qt.
 
 ###Supported spritesheet formats###
 * cocos2d
@@ -31,6 +31,6 @@ Spritesheet.js is command-line spritesheet (a.k.a. Texture Atlas) generator writ
     ```
   
 ###Trimming / Cropping###
-Spritesheet.js can remove transparent whitespace around images. Thanks to that you can pack more assets into one spritesheet and it makes rendering a little bit faster.
+SpriteGlue can remove transparent whitespace around images. Thanks to that you can pack more assets into one spritesheet and it makes rendering a little bit faster.
 
 ![Trimming / Cropping](http://i.imgur.com/76OokJU.png)

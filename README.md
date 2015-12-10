@@ -9,12 +9,12 @@ Spritesheet.js is command-line spritesheet (a.k.a. Texture Atlas) generator writ
 ###Usage###
 1. **Command Line**
     ```bash
-    $ spritesheet-js assets/*.png
+    $ spriteglue assets_folder
     ```
     Options:
     ```bash
-    $ spritesheet-js
-    Usage: spritesheet-js [options] <files>
+    $ spriteglue
+    Usage: spriteglue [options] <files> --sheet resultPath
 	
 	Options:
     --data          data file path (for cocos2d it will be .plist)                          [default: "same path with result texture"]

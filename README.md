@@ -49,12 +49,3 @@ Spritesheet.js can remove transparent whitespace around images. Thanks to that y
 
 *NOTE: Some libraries such as Easel.js dont't support this feature.*
 ![Trimming / Cropping](http://i.imgur.com/76OokJU.png)
-
-###Installation###
-1. Install [ImageMagick](http://www.imagemagick.org/)
-2. ```npm install spritesheet-js -g```
-
-###Test###
-```
-mocha test
-```

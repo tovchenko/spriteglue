@@ -1,7 +1,7 @@
 QT += core
 QT += xml
 
-TARGET = spritesheet
+TARGET = spriteglue
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += c++11

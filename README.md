@@ -4,11 +4,7 @@
 Spritesheet.js is command-line spritesheet (a.k.a. Texture Atlas) generator written in node.js.
 
 ###Supported spritesheet formats###
-* Starling / Sparrow
-* JSON (i.e. PIXI.js)
-* Easel.js
 * cocos2d
-* CSS (new!)
 
 ###Usage###
 1. **Command Line**
@@ -33,19 +29,8 @@ Spritesheet.js is command-line spritesheet (a.k.a. Texture Atlas) generator writ
     --powerOf2      makes texture size power of 2                                           [default: false]
     --opt           color format of resulting texture (rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
     ```
-2. **Node.js**
-    ```javascript
-    var spritesheet = require('spritesheet-js');
-    
-    spritesheet('assets/*.png', {format: 'json'}, function (err) {
-      if (err) throw err;
-
-      console.log('spritesheet successfully generated');
-    });
-  ```
   
 ###Trimming / Cropping###
 Spritesheet.js can remove transparent whitespace around images. Thanks to that you can pack more assets into one spritesheet and it makes rendering a little bit faster.
 
-*NOTE: Some libraries such as Easel.js dont't support this feature.*
 ![Trimming / Cropping](http://i.imgur.com/76OokJU.png)

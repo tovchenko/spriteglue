@@ -23,14 +23,14 @@ const int kDefaultTextureSize = 4096;
 const auto kSheetInfo = "result texture path";
 const auto kDataInfo = "data file path (default: same path with texture)";
 const auto kScaleInfo = "scale image factor (default: 1)";
-const auto kTrimInfo = "trims source images according to mode (default: max-alpha, available: all-alpha, none)";
+const auto kTrimInfo = "trims source images according to the mode (default: max-alpha, available: all-alpha, none)";
 const auto kPaddingInfo = "general padding between sprites and border (default: 0)";
 const auto kInnerPaddingInfo = "distance between sprites (default: 1)";
-const auto kSuffixInfo = "suffix which will be added to atlas data file (default: will be same as resulting texture)";
+const auto kSuffixInfo = "path extension which will be used by the atlas data file (default: will be same as resulting texture)";
 const auto kMaxSizeWInfo = "max atlas width. if undefined it will use height instead (default: 4096)";
 const auto kMaxSizeHInfo = "max atlas height. if undefined it will use width instead (default: 4096)";
 const auto kFormatInfo = "color format of resulting texture (default: rgba8888, available: rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p)";
-const auto kSquareInfo = "makes texture square (default: isn\'t square)";
+const auto kSquareInfo = "makes texture width and height equal (default: isn\'t square)";
 const auto kPowerOf2Info = "makes texture power of 2 (default: isn\'t powerOf2)";
 
 static auto _printUsage()->void {
@@ -46,9 +46,9 @@ static auto _printUsage()->void {
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--suffix"), kSuffixInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-w"), kMaxSizeWInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-h"), kMaxSizeHInfo);
-    fprintf(stdout, "\t%s\t%s\n", qPrintable("--opt"), kFormatInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--square"), kSquareInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--powerOf2"), kPowerOf2Info);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--opt"), kFormatInfo);
 }
 
 auto main(int argc, char *argv[])->int {

@@ -24,7 +24,8 @@ const auto kSheetInfo = "result texture path";
 const auto kDataInfo = "data file path (default: same path with texture)";
 const auto kScaleInfo = "scale image factor (default: 1)";
 const auto kTrimInfo = "trims source images according to mode (default: max-alpha, available: all-alpha, none)";
-const auto kPaddingInfo = "padding between sprites (default: 1)";
+const auto kPaddingInfo = "general padding between sprites and border (default: 0)";
+const auto kInnerPaddingInfo = "distance between sprites (default: 1)";
 const auto kSuffixInfo = "suffix which will be added to atlas data file (default: will be same as resulting texture)";
 const auto kMaxSizeWInfo = "max atlas width. if undefined it will use height instead (default: 4096)";
 const auto kMaxSizeHInfo = "max atlas height. if undefined it will use width instead (default: 4096)";
@@ -41,6 +42,7 @@ static auto _printUsage()->void {
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--scale"), kScaleInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--trim"), kTrimInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--padding"), kPaddingInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--inner-padding"), kInnerPaddingInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--suffix"), kSuffixInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-w"), kMaxSizeWInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-h"), kMaxSizeHInfo);
@@ -63,7 +65,7 @@ auto main(int argc, char *argv[])->int {
     QCommandLineOption scaleOption(QStringList() << "scale", kScaleInfo, "scale");
     QCommandLineOption trimOption(QStringList() << "trim", kTrimInfo, "trim");
     QCommandLineOption paddingOption(QStringList() << "padding", kPaddingInfo, "padding");
-    QCommandLineOption innerPaddingOption(QStringList() << "inner-padding", kPaddingInfo, "innerPadding");
+    QCommandLineOption innerPaddingOption(QStringList() << "inner-padding", kInnerPaddingInfo, "innerPadding");
     QCommandLineOption suffixOption(QStringList() << "suffix", kSuffixInfo, "suffix");
     QCommandLineOption maxSizeWOption(QStringList() << "max-size-w", kMaxSizeWInfo, "width");
     QCommandLineOption maxSizeHOption(QStringList() << "max-size-h", kMaxSizeHInfo, "height");

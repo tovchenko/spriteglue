@@ -21,19 +21,17 @@ Spritesheet.js is command-line spritesheet (a.k.a. Texture Atlas) generator writ
     Usage: spritesheet-js [options] <files>
 	
 	Options:
-    -f, --format  format of spritesheet (starling, sparrow, json, pixi.js, easel.js, cocos2d)                                                      [default: "json"]
-    -n, --name    name of generated spritesheet                                                                                                    [default: "spritesheet"]
-    -p, --path    path to export directory                                                                                                         [default: "."]
-    --fullpath    include path in file name                                                                                                        [default: false]
-    --prefix      prefix for image paths (css format only)                                                                                         [default: ""]
-    --trim        removes transparent whitespaces around images                                                                                    [default: false]
-    --square      texture should be s square                                                                                                       [default: false]
-    --powerOfTwo  texture width and height should be power of two                                                                                  [default: false]
-    --validate    check algorihtm returned data                                                                                                    [default: false]
-    --algorithm   packing algorithm: growing-binpacking (default), binpacking (requires passing width and height options), vertical or horizontal  [default: "growing-binpacking"]
-    --padding     padding between images in spritesheet                                                                                            [default: 0]
-    --scale       percentage scale                                                                                                                 [default: "100%"]
-    --fuzz        percentage fuzz factor (usually value of 1% is a good choice)                                                                    [default: ""]
+    --data          data file path (for cocos2d it will be .plist)                          [default: "same path with result texture"]
+    --scale         scale image factor (at 0 to 1)                                          [default: "1"]
+    --trim          trims source images according to the mode (none, all-alpha, max-alpha)  [default: "max-alpha"]
+    --padding       general padding between sprites and border                              [default: "0"]
+    --inner-padding distance between sprites                                                [default: "1"]
+    --suffix        path extension which will be used by the atlas data file                [default: "same as resulting texture"]
+    --max-size-w    max atlas width. if undefined it will use height instead                [default: "4096"]
+    --max-size-h    max atlas height. if undefined it will use width instead                [default: "4096"]
+    --square        makes texture width and height equal                                    [default: false]
+    --powerOf2      makes texture size power of 2                                           [default: false]
+    --opt           color format of resulting texture (rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
     ```
 2. **Node.js**
     ```javascript
@@ -60,6 +58,3 @@ Spritesheet.js can remove transparent whitespace around images. Thanks to that y
 ```
 mocha test
 ```
-
---------------
-Thanks [Przemysław Piekarski](http://www.behance.net/piekarski) for logo design and assets in examples.

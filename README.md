@@ -35,6 +35,30 @@ You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
     ```bash
     spriteglue /Users/tovchenko/myassets --sheet /Users/tovchenko/myatlas.png --max-size-w 2048 --scale 0.5 --suffix pvr.ccz --square --powerOf2
     ```
+
+###Output###
+SpriteGlue generates texture in png format. Next you may want to turn this png texture into platform depended format like PVR, PKM etc. For this purpose use following options:
+1. **--suffix**
+    Gives you posibility to pre-define the final texture file extension in your atlas meta data file (for cocos2d it's plist)
+    ```xml
+<key>metadata</key>
+  <dict>
+   <key>format</key>
+   <integer>2</integer>
+   <key>realTextureFileName</key>
+   <string>myatlas.pvr.ccz</string>
+   <key>size</key>
+   <string>{1024,1024}</string>
+   <key>textureFileName</key>
+   <string>myatlas.pvr.ccz</string>
+  </dict>
+  ```
+
+2. **--square**
+    Some formats like PVR supports only squared images, that why you must use this option if you going to convert a texture into PVR
+
+3. **--powerOf2**
+    Some render systems like OpenGL ES 1.1 and graphic formats like PVR support textures where width and height aliquot to power of 2
   
 ###Trimming / Cropping###
 SpriteGlue can remove transparent whitespace around images. Thanks to that you can pack more assets into one spritesheet and it makes rendering a little bit faster.

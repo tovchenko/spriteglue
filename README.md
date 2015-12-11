@@ -49,9 +49,12 @@ For this purpose use following options:
 3. **--powerOf2**
     Some render systems like OpenGL ES 1.1 and graphic formats like PVR support textures where width and height aliquot to power of 2
 
-###Algorithm/Performance###
+###Algorithm/Optimizations###
 As a layout algorithm has been selected "max-rects" and using some additional aligning/sprite duplicating features makes your atlas as compact as posible, I hope:)
 The atlases made by SpriteGlue have been even a little bit compact then same atlases made by commercial TexturePacker.
   
 ###Trimming / Cropping###
 SpriteGlue can remove transparent whitespace around images. With that you can pack more assets into one spritesheet and it makes rendering a little bit faster.
+
+###Deploy project for Mac OS###
+If you want to use this project on your mac without dependency on external Qt library - you must deploy the project. For that you should open the project in Qt Creator, select in a left bottom corner "Release" and press "Build". After that find a qt tool named "macdeployqt", it should be located by your Qt installation path. Run it and pass as a parameter your already builded spriteglue application bundle, that tool will add all needed Qt frameworks inside spriteglue bundle.

@@ -48,6 +48,10 @@ For this purpose use following options:
 
 3. **--powerOf2**
     Some render systems like OpenGL ES 1.1 and graphic formats like PVR support textures where width and height aliquot to power of 2
+
+###Algorithm/Performance###
+As a layout algorithm has been selected "max-rects" and using some additional aligning/sprite duplicating features makes your atlas as compact as posible, I hope:)
+The atlases made by SpriteGlue have been even a little bit compact then same atlases made by commercial TexturePacker.
   
 ###Trimming / Cropping###
 SpriteGlue can remove transparent whitespace around images. Thanks to that you can pack more assets into one spritesheet and it makes rendering a little bit faster.

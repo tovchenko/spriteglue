@@ -54,6 +54,4 @@ As a layout algorithm has been selected "max-rects" and using some additional al
 The atlases made by SpriteGlue have been even a little bit compact then same atlases made by commercial TexturePacker.
   
 ###Trimming / Cropping###
-SpriteGlue can remove transparent whitespace around images. Thanks to that you can pack more assets into one spritesheet and it makes rendering a little bit faster.
-
-![Trimming / Cropping](http://i.imgur.com/76OokJU.png)
+SpriteGlue can remove transparent whitespace around images. With that you can pack more assets into one spritesheet and it makes rendering a little bit faster.

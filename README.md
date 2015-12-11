@@ -18,12 +18,12 @@ You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
     Usage: spriteglue [options] <files> --sheet resultPath
 	
 	Options:
-    --data          data file path (for cocos2d it will be .plist)                          [default: "same path with result texture"]
+    --data          data file path (for cocos2d it will be .plist)                          [default: same path with result texture]
     --scale         scale image factor (at 0 to 1)                                          [default: "1"]
     --trim          trims source images according to the mode (none, all-alpha, max-alpha)  [default: "max-alpha"]
     --padding       general padding between sprites and border                              [default: "0"]
     --inner-padding distance between sprites                                                [default: "1"]
-    --suffix        path extension which will be used by the atlas data file                [default: "same as resulting texture"]
+    --suffix        path extension which will be used by the atlas data file                [default: same as resulting texture]
     --max-size-w    max atlas width. if undefined it will use height instead                [default: "4096"]
     --max-size-h    max atlas height. if undefined it will use width instead                [default: "4096"]
     --square        makes texture width and height equal                                    [default: false]
@@ -37,7 +37,9 @@ You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
     ```
 
 ###Output###
-SpriteGlue generates texture in png format. Next you may want to turn this png texture into a platform depended format like PVR, PKM etc. For this purpose use following options:
+SpriteGlue generates texture in png format. Next you may want to turn this png texture into a platform depended format like PVR, PKM etc.
+For this purpose use following options:
+
 1. **--suffix**
     Gives you posibility to pre-define the final texture file extension in your atlas meta data file (for cocos2d it's plist)
 

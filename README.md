@@ -40,11 +40,6 @@ You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
 SpriteGlue generates texture in png format. Next you may want to turn this png texture into a platform depended format like PVR, PKM etc. For this purpose use following options:
 1. **--suffix**
     Gives you posibility to pre-define the final texture file extension in your atlas meta data file (for cocos2d it's plist)
-    ```xml
-<myxml>
-   <someElement />  
-</myxml>
-```
 
 2. **--square**
     Some formats like PVR supports only squared images, that why you must use this option if you going to convert a texture into PVR

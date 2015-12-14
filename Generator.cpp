@@ -72,13 +72,14 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
 
     bool optimal = true;
     bool enoughSpace;
+    const bool nonSquarePowerOf2 = !_square && _isPowerOf2;
     do {
         enoughSpace = true;
-        if (optimal)
+        if (nonSquarePowerOf2 && optimal)
             notUsedPercent += kStepPercent;
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
         QSize beforeSize(side, side);
-        if (!_square && _isPowerOf2 && !optimal) {
+        if (nonSquarePowerOf2 && !optimal) {
             beforeSize.setWidth(_floorToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
             optimal = true;
@@ -171,7 +172,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         bottom -= _innerPadding;
         finalCrop = QRect(QPoint(left, top), QPoint(right, bottom));
         finalCrop.setSize(_fitSize(finalCrop.size(), optimal));      
-    } while (!enoughSpace || (_isPowerOf2 && !_square && !optimal));
+    } while (!enoughSpace || (nonSquarePowerOf2 && !optimal));
 
     _removeTempFiles(*imageData);
 
@@ -354,7 +355,7 @@ auto Generator::_processImages() const->std::shared_ptr<ImageData> {
     }
 
     if (result->size() < files->size()) {
-        fprintf(stderr, "%s\n", "too small scale coefficient, try to choose bigger.");
+        fprintf(stderr, "%s\n", "Found an invalid image or scale coefficient has been chosen too small.");
         result->clear();
     }
 

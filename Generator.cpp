@@ -68,16 +68,20 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
     int left, top, right, bottom;
     QVariantMap frames;
     QImage result(_maxSize, _outputFormat);
+    QRect finalCrop(QPoint(0, 0), _maxSize);
 
+    bool optimal = true;
     bool enoughSpace;
     do {
         enoughSpace = true;
-        notUsedPercent += kStepPercent;
+        if (optimal)
+            notUsedPercent += kStepPercent;
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
         QSize beforeSize(side, side);
-        if (!_square && _isPowerOf2) {
+        if (!_square && _isPowerOf2 && !optimal) {
             beforeSize.setWidth(_floorToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
+            optimal = true;
         } else if (_square && _isPowerOf2) {
             beforeSize.setWidth(_roundToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
@@ -162,14 +166,14 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
             frames[frame] = frameInfo;
         }
         painter.end();
-    } while (!enoughSpace);
+
+        right -= _innerPadding;
+        bottom -= _innerPadding;
+        finalCrop = QRect(QPoint(left, top), QPoint(right, bottom));
+        finalCrop.setSize(_fitSize(finalCrop.size(), optimal));      
+    } while (!enoughSpace || (_isPowerOf2 && !_square && !optimal));
 
     _removeTempFiles(*imageData);
-
-    right -= _innerPadding;
-    bottom -= _innerPadding;
-    QRect finalCrop(QPoint(left, top), QPoint(right, bottom));
-    finalCrop.setSize(_fitSize(finalCrop.size()));
 
     if (finalCrop.width() > _maxSize.width() || finalCrop.height() > _maxSize.height()) {
         fprintf(stderr, "%s%dx%d%s%dx%d\n", qPrintable(finalImagePath + " "), finalCrop.width(), finalCrop.height(), " - too large for available max size: ", _maxSize.width(), _maxSize.height());
@@ -295,8 +299,9 @@ auto Generator::_saveResults(const QImage& image, const QVariantMap& frames, con
     return false;
 }
 
-auto Generator::_fitSize(const QSize& size) const->QSize {
+auto Generator::_fitSize(const QSize& size, bool& optimal) const->QSize {
     QSize result = size;
+    optimal = true;
 
     if (_square) {
         auto side = std::max(result.width(), result.height());
@@ -306,6 +311,8 @@ auto Generator::_fitSize(const QSize& size) const->QSize {
     if (_isPowerOf2) {
         result.setWidth(_roundToPowerOf2(result.width()));
         result.setHeight(_roundToPowerOf2(result.height()));
+        if (size.width() * size.height() <= (result.width() * result.height()) / 2)
+            optimal = false;
     }
     return result;
 }

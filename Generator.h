@@ -61,7 +61,7 @@ protected:
     static auto _checkDuplicate(const QImage& image, const std::map<QString, QString> paths, QString& out)->bool;
     static auto _adjustSortedPaths(std::vector<QString>& paths, ImageData& imageData)->void;
     auto _saveResults(const QImage& image, const QVariantMap& frames, const QString& finalImagePath, const QString& plistPath) const->bool;
-    auto _fitSize(const QSize& size) const->QSize;
+    auto _fitSize(const QSize& size, bool& optimal) const->QSize;
     auto _readFileList() const->std::shared_ptr<std::set<QString>>;
     auto _processImages() const->std::shared_ptr<ImageData>;
 

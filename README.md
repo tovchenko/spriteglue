@@ -28,7 +28,7 @@ You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
     --max-size-h    max atlas height. if undefined it will use width instead                [default: "4096"]
     --square        makes texture width and height equal                                    [default: false]
     --powerOf2      makes texture size power of 2                                           [default: false]
-    --opt           color format of resulting texture (rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
+    --opt           color format of resulting texture (rgba8888, rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
     ```
 
 * **Example**
@@ -49,12 +49,12 @@ For this purpose use following options:
 3. **--powerOf2**
     Some render systems like OpenGL ES 1.1 and graphic formats like PVR support textures where width and height aliquot to power of 2
 
-###Algorithm/Optimizations###
-As a layout algorithm has been selected "max-rects" and using some additional aligning/sprite duplicating features makes your atlas as compact as posible, I hope:)
+###Algorithm / Optimizations###
+As a layout algorithm has been chosen "max-rects" and added some additional aligning/sprite duplicating features that makes your atlas as compact as posible, I hope:)
 The atlases made by SpriteGlue have been even a little bit compact then same atlases made by commercial TexturePacker.
   
 ###Trimming / Cropping###
 SpriteGlue can remove transparent whitespace around images. With that you can pack more assets into one spritesheet and it makes rendering a little bit faster.
 
-###Deploy project for Mac OS###
+###Deploying project for Mac OS###
 If you want to use this project on your mac without dependency on an external Qt library - you must deploy the project. For that you should open the project in Qt Creator, select in a left bottom corner "Release" and press "Build". After that find a qt tool named "macdeployqt", it should be located by your Qt installation path. Run it and pass as a parameter your already builded spriteglue application bundle, that tool will add all needed Qt frameworks inside spriteglue bundle.

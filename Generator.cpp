@@ -127,10 +127,10 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
                         left = packedRect.x;
                     if (packedRect.y < top)
                         top = packedRect.y;
-                    if (packedRect.x + packedRect.width > right)
-                        right = packedRect.x + packedRect.width;
-                    if (packedRect.y + packedRect.height > bottom)
-                        bottom = packedRect.y + packedRect.height;
+                    if (packedRect.x + packedRect.width - 1 > right)
+                        right = packedRect.x + packedRect.width - 1;
+                    if (packedRect.y + packedRect.height - 1 > bottom)
+                        bottom = packedRect.y + packedRect.height - 1;
                 } else {
                     enoughSpace = false;
                     break;

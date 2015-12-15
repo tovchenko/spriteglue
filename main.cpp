@@ -25,7 +25,7 @@ const auto kDataInfo = "data file path (default: same path with texture)";
 const auto kScaleInfo = "scale image factor (default: 1)";
 const auto kTrimInfo = "trims source images according to the mode (default: max-alpha, available: all-alpha, none)";
 const auto kPaddingInfo = "general padding between sprites and border (default: 0)";
-const auto kInnerPaddingInfo = "distance between sprites (default: 1)";
+const auto kMarginInfo = "distance between sprites (default: 1)";
 const auto kSuffixInfo = "path extension which will be used by the atlas data file (default: will be same as resulting texture)";
 const auto kMaxSizeWInfo = "max atlas width. if undefined it will use height instead (default: 4096)";
 const auto kMaxSizeHInfo = "max atlas height. if undefined it will use width instead (default: 4096)";
@@ -42,7 +42,7 @@ static auto _printUsage()->void {
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--scale"), kScaleInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--trim"), kTrimInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--padding"), kPaddingInfo);
-    fprintf(stdout, "\t%s\t%s\n", qPrintable("--inner-padding"), kInnerPaddingInfo);
+    fprintf(stdout, "\t%s\t%s\n", qPrintable("--margin"), kMarginInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--suffix"), kSuffixInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-w"), kMaxSizeWInfo);
     fprintf(stdout, "\t%s\t%s\n", qPrintable("--max-size-h"), kMaxSizeHInfo);
@@ -65,14 +65,14 @@ auto main(int argc, char *argv[])->int {
     QCommandLineOption scaleOption(QStringList() << "scale", kScaleInfo, "scale");
     QCommandLineOption trimOption(QStringList() << "trim", kTrimInfo, "trim");
     QCommandLineOption paddingOption(QStringList() << "padding", kPaddingInfo, "padding");
-    QCommandLineOption innerPaddingOption(QStringList() << "inner-padding", kInnerPaddingInfo, "innerPadding");
+    QCommandLineOption marginOption(QStringList() << "margin", kMarginInfo, "margin");
     QCommandLineOption suffixOption(QStringList() << "suffix", kSuffixInfo, "suffix");
     QCommandLineOption maxSizeWOption(QStringList() << "max-size-w", kMaxSizeWInfo, "width");
     QCommandLineOption maxSizeHOption(QStringList() << "max-size-h", kMaxSizeHInfo, "height");
     QCommandLineOption formatOption(QStringList() << "opt", kFormatInfo, "format");
     QCommandLineOption squareOption(QStringList() << "square", kSquareInfo);
     QCommandLineOption powerOf2Option(QStringList() << "powerOf2", kPowerOf2Info);
-    cmd.addOptions(QList<QCommandLineOption>() << sheetOption << dataOption << scaleOption << trimOption << paddingOption << innerPaddingOption
+    cmd.addOptions(QList<QCommandLineOption>() << sheetOption << dataOption << scaleOption << trimOption << paddingOption << marginOption
                    << suffixOption << maxSizeWOption << maxSizeHOption << formatOption << squareOption << powerOf2Option);
     cmd.process(app.arguments());
 
@@ -152,19 +152,19 @@ auto main(int argc, char *argv[])->int {
             return 1;
         }
     }
-    spritesheet.setBasePadding(padding);
+    spritesheet.setPadding(padding);
 
-    int innerPadding = 1;
-    if (cmd.isSet(innerPaddingOption)) {
+    int margin = 1;
+    if (cmd.isSet(marginOption)) {
         bool ok = false;
-        innerPadding = cmd.value(innerPaddingOption).toInt(&ok);
+        margin = cmd.value(marginOption).toInt(&ok);
         if (!ok) {
-            fprintf(stderr, "%s\n", qPrintable("The value after --inner-padding is not a number value"));
+            fprintf(stderr, "%s\n", qPrintable("The value after --margin is not a number value"));
             _printUsage();
             return 1;
         }
     }
-    spritesheet.setInnerPadding(innerPadding);
+    spritesheet.setMargin(margin);
 
     if (cmd.isSet(suffixOption))
         spritesheet.setTextureSuffixInData(cmd.value(suffixOption));

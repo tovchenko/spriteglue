@@ -33,7 +33,7 @@ Suite 330, Boston, MA 02111-1307 USA */
 
 const int kBasePercent = 10;
 const int kStepPercent = 2;
-const int kAreaInnerPaddingMagic = 2;
+const int kAreaMarginMagic = 2;
 
 Generator::Generator(const QString& inputImageDirPath)
     : _inputImageDirPath(inputImageDirPath) {
@@ -50,8 +50,8 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         return data.second.duplicated
             ? sum
             : sum + (
-                (data.second.cropRect.width() + 2 * _padding + _innerPadding / kAreaInnerPaddingMagic) *
-                (data.second.cropRect.height() + 2 * _padding + _innerPadding / kAreaInnerPaddingMagic));
+                (data.second.cropRect.width() + 2 * _padding + _margin / kAreaMarginMagic) *
+                (data.second.cropRect.height() + 2 * _padding + _margin / kAreaMarginMagic));
     });
 
     ImageSorter sorter(frameSizes);
@@ -77,7 +77,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         enoughSpace = true;
         if (!nonSquarePowerOf2 || optimal)
             notUsedPercent += kStepPercent;
-        
+
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
         QSize beforeSize(side, side);
         if (nonSquarePowerOf2 && !optimal) {
@@ -114,7 +114,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
                 QImage image(imageDataIt->second.pathOrDuplicateFrameName);
 
                 bool orientation = cropRect.width() > cropRect.height();
-                const auto packedRect = bin.Insert(cropRect.width() + _padding * 2 + _innerPadding, cropRect.height() + _padding * 2 + _innerPadding, rbp::MaxRectsBinPack::RectBestLongSideFit);
+                const auto packedRect = bin.Insert(cropRect.width() + _padding * 2 + _margin, cropRect.height() + _padding * 2 + _margin, rbp::MaxRectsBinPack::RectBestLongSideFit);
 
                 if (packedRect.height > 0) {
                     const bool isRotated = packedRect.width > packedRect.height != orientation;
@@ -162,15 +162,15 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
                                 QString::number(cropRect.height()));
 
             frameInfo["sourceSize"] = QString("{%1,%2}").arg(
-                        QString::number(beforeTrimSize.width() + 2 * _padding + _innerPadding),
-                        QString::number(beforeTrimSize.height() + 2 * _padding + _innerPadding));
+                        QString::number(beforeTrimSize.width() + 2 * _padding + _margin),
+                        QString::number(beforeTrimSize.height() + 2 * _padding + _margin));
 
             frames[frame] = frameInfo;
         }
         painter.end();
 
-        right -= _innerPadding;
-        bottom -= _innerPadding;
+        right -= _margin;
+        bottom -= _margin;
         finalCrop = QRect(QPoint(left, top), QPoint(right, bottom));
         finalCrop.setSize(_fitSize(finalCrop.size(), optimal));   
     } while (!enoughSpace || (nonSquarePowerOf2 && !optimal));

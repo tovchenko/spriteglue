@@ -18,17 +18,17 @@ You can use it on any platform which supports Qt (Mac OS, Windows, Linux)
     Usage: spriteglue [options] <files> --sheet resultPath
 	
 	Options:
-    --data          data file path (for cocos2d it will be .plist)                          [default: same path with result texture]
-    --scale         scale image factor (at 0 to 1)                                          [default: "1"]
-    --trim          trims source images according to the mode (none, all-alpha, max-alpha)  [default: "max-alpha"]
-    --padding       general padding between sprites and border                              [default: "0"]
-    --inner-padding distance between sprites                                                [default: "1"]
-    --suffix        path extension which will be used by the atlas data file                [default: same as resulting texture]
-    --max-size-w    max atlas width. if undefined it will use height instead                [default: "4096"]
-    --max-size-h    max atlas height. if undefined it will use width instead                [default: "4096"]
-    --square        makes texture width and height equal                                    [default: false]
-    --powerOf2      makes texture size power of 2                                           [default: false]
-    --opt           color format of resulting texture (rgba8888, rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
+    --data       data file path (for cocos2d it will be .plist)                          [default: same path with result texture]
+    --scale      scale image factor (at 0 to 1)                                          [default: "1"]
+    --trim       trims source images according to the mode (none, all-alpha, max-alpha)  [default: "max-alpha"]
+    --padding    general padding between sprites and border                              [default: "0"]
+    --margin     distance between sprites                                                [default: "1"]
+    --suffix     path extension which will be used by the atlas data file                [default: same as resulting texture]
+    --max-size-w max atlas width. if undefined it will use height instead                [default: "4096"]
+    --max-size-h max atlas height. if undefined it will use width instead                [default: "4096"]
+    --square     makes texture width and height equal                                    [default: false]
+    --powerOf2   makes texture size power of 2                                           [default: false]
+    --opt        color format of resulting texture (rgba8888, rgb888, rgb666, rgb555, rgb444, alpha8, grayscale8, mono, rgba8888p) [default: "rgba8888"]
     ```
 
 * **Example**

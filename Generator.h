@@ -33,8 +33,8 @@ public:
 
     auto setScale(float scale)->void { _scale = scale; }
     auto setMaxSize(const QSize& size)->void { _maxSize = size; }
-    auto setBasePadding(int padding)->void { _padding = padding; }
-    auto setInnerPadding(int padding)->void { _innerPadding = padding; }
+    auto setPadding(int padding)->void { _padding = padding; }
+    auto setMargin(int margin)->void { _margin = margin; }
     auto setTrimMode(TrimMode mode)->void { _trim = mode; }
     auto setIsSquare(bool square)->void { _square = square; }
     auto setIsPowerOf2(bool isPow2)->void { _isPowerOf2 = isPow2; }
@@ -68,7 +68,7 @@ protected:
     float           _scale = 1.0f;
     QSize           _maxSize = { 0, 0 };
     int             _padding = 0;
-    int             _innerPadding = 1;
+    int             _margin = 1;
     TrimMode        _trim = MAX_ALPHA;
     bool            _square = false;
     bool            _isPowerOf2 = false;

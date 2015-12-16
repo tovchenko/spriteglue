@@ -27,11 +27,12 @@ Suite 330, Boston, MA 02111-1307 USA */
 #include <QImageReader>
 #include <QVariantMap>
 #include <QTextStream>
+#include <QTemporaryFile>
 
 #include <cmath>
 #include <map>
 
-const int kBasePercent = 10;
+const int kBasePercent = 6;
 const int kStepPercent = 2;
 const int kAreaMarginMagic = 2;
 
@@ -342,16 +343,18 @@ auto Generator::_processImages() const->std::shared_ptr<ImageData> {
         if (_trim != TrimMode::NONE)
             image = ImageTrim::createImage(image, _trim == TrimMode::MAX_ALPHA, cropRect);
 
-        const QFileInfo fileInfo(file);
-        const QString tmpImagePath = QDir::tempPath() + QDir::separator() + fileInfo.baseName();
-        QImageWriter writer(tmpImagePath);
-        writer.setFormat("png");
-        if (writer.write(image)) {
-            _Data data;
-            data.beforeCropSize = beforeTrimSize;
-            data.cropRect = cropRect;
-            data.pathOrDuplicateFrameName = tmpImagePath;
-            result->insert(std::make_pair(QDir(_inputImageDirPath).relativeFilePath(file), data));
+        QTemporaryFile uniqueFile;
+        uniqueFile.setAutoRemove(false);
+        if (uniqueFile.open()) {
+            QImageWriter writer(uniqueFile.fileName());
+            writer.setFormat("png");
+            if (writer.write(image)) {
+                _Data data;
+                data.beforeCropSize = beforeTrimSize;
+                data.cropRect = cropRect;
+                data.pathOrDuplicateFrameName = uniqueFile.fileName();
+                result->insert(std::make_pair(QDir(_inputImageDirPath).relativeFilePath(file), data));
+            }
         }
     }
 

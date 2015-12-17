@@ -32,6 +32,8 @@ Suite 330, Boston, MA 02111-1307 USA */
 #include <cmath>
 #include <map>
 
+const float kSidePercent = 1.5f;
+const float kStepSidePercent = 0.1f;
 const int kBasePercent = 6;
 const int kStepPercent = 2;
 const int kAreaMarginMagic = 2;
@@ -65,6 +67,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
     desiredRatioWidth = desiredRatioWidth != 0 ? desiredRatioWidth : 1;
     int desiredRatioHeight = _maxSize.height() / _maxSize.width();
     desiredRatioHeight = desiredRatioHeight != 0 ? desiredRatioHeight : 1;
+    float sidePercent = kSidePercent;
 
     int left, top, right, bottom;
     QVariantMap frames;
@@ -73,14 +76,22 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
 
     bool optimal = true;
     bool enoughSpace;
+    bool notFinished;
+    bool widthCompresingStarted = false;
     const bool nonSquarePowerOf2 = !_square && _isPowerOf2;
     do {
         enoughSpace = true;
-        if (!nonSquarePowerOf2 || optimal)
+        if ((!nonSquarePowerOf2 || optimal) && !widthCompresingStarted)
             notUsedPercent += kStepPercent;
 
         const int side = floor(sqrtf(area + area * notUsedPercent / 100));
-        QSize beforeSize(side, side);
+        int sideW = side;
+        if (widthCompresingStarted && !_square && !_isPowerOf2) {
+            sideW -= side * sidePercent / 100;
+            sidePercent -= kStepSidePercent;
+        }
+
+        QSize beforeSize(sideW, side);
         if (nonSquarePowerOf2 && !optimal) {
             beforeSize.setWidth(_floorToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
@@ -89,7 +100,7 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
             beforeSize.setWidth(_roundToPowerOf2(side));
             beforeSize.setHeight(_roundToPowerOf2(side));
         } else if (!_square) {
-            beforeSize.setWidth(side * desiredRatioWidth);
+            beforeSize.setWidth(sideW * desiredRatioWidth);
             beforeSize.setHeight(side * desiredRatioHeight);
         }
 
@@ -173,8 +184,14 @@ auto Generator::generateTo(const QString& finalImagePath, const QString& plistPa
         right -= _margin;
         bottom -= _margin;
         finalCrop = QRect(QPoint(left, top), QPoint(right, bottom));
-        finalCrop.setSize(_fitSize(finalCrop.size(), optimal));   
-    } while (!enoughSpace || (nonSquarePowerOf2 && !optimal));
+        finalCrop.setSize(_fitSize(finalCrop.size(), optimal));
+
+        notFinished = !enoughSpace || (nonSquarePowerOf2 && !optimal);
+        if (!widthCompresingStarted && !_square && !_isPowerOf2) {
+            widthCompresingStarted = !notFinished;
+            notFinished = true;
+        }
+    } while (notFinished);
 
     _removeTempFiles(*imageData);
 
